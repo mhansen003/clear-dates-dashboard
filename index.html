@@ -286,6 +286,16 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
 .dm-meta{display:flex;gap:8px;flex-wrap:wrap}
 .dm-cat-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;background:var(--cmg-bg);color:var(--cmg-text-label);border:1px solid var(--cmg-border-light)}
 .dm-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700}
+/* ── Custom Doc Edit Form (inside modal) ─────────────────── */
+.dm-edit-section{margin-top:16px;padding:18px 20px;background:var(--cmg-bg-alt);border-radius:12px;border:1px solid var(--cmg-border-light)}
+.dm-edit-section h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--cmg-text-muted);margin-bottom:12px}
+.dm-edit-row{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.dm-edit-row:last-child{margin-bottom:0}
+.dm-edit-row label{font-size:12px;font-weight:600;color:var(--cmg-text-label)}
+.dm-edit-row input[type="text"],.dm-edit-row input[type="date"]{width:100%;padding:8px 12px;border:1px solid var(--cmg-border);border-radius:var(--cmg-radius);font-family:inherit;font-size:13px;color:var(--cmg-text);background:var(--cmg-surface);transition:border-color .15s}
+.dm-edit-row input:focus{outline:none;border-color:var(--cmg-primary);box-shadow:0 0 0 3px rgba(19,136,144,.12)}
+.dm-edit-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.dm-edit-actions .btn{min-width:80px;justify-content:center}
 @media print{.date-tooltip,.date-modal-backdrop{display:none!important}}
 </style>
 </head>
@@ -540,8 +550,15 @@ function mkDefault(){
 /* ═══════════════════════════════════════════════════════════
    STATE
    ═══════════════════════════════════════════════════════════ */
-const SK='clear-dash-layouts', AK='clear-dash-active';
+const SK='clear-dash-layouts', AK='clear-dash-active', CK='clear-dash-custom-docs';
 let layouts=[], activeId='default', editing=false, editGroups=[], collapsedG={}, collapsedI={}, ddOpen=false;
+// Custom doc labels & dates: { customDocDueDate1: { label: '1st Paystub Post-Closing', date: '2026-05-15' }, ... }
+let customDocs={};
+function loadCustomDocs(){try{const r=localStorage.getItem(CK);customDocs=r?JSON.parse(r):{}}catch{customDocs={}}}
+function persistCustomDocs(){localStorage.setItem(CK,JSON.stringify(customDocs))}
+function isCustomDoc(id){return id==='customDocDueDate1'||id==='customDocDueDate2'}
+function getLabel(f){if(isCustomDoc(f.id)&&customDocs[f.id]&&customDocs[f.id].label)return customDocs[f.id].label;return f.l}
+function getDate(id){if(isCustomDoc(id)&&customDocs[id]&&customDocs[id].date!==undefined)return customDocs[id].date;return DATES[id]}
 let dragType=null, dragId=null, dragSourceGroup=null; // drag state
 let viewMode=localStorage.getItem('clear-dash-view')||'cards'; // 'cards' or 'condensed'
 
@@ -549,6 +566,7 @@ function load(){
   try{const r=localStorage.getItem(SK); layouts=r?JSON.parse(r):[mkDefault()]}catch{layouts=[mkDefault()]}
   if(!layouts.find(l=>l.id==='default')) layouts.unshift(mkDefault());
   activeId=localStorage.getItem(AK)||'default';
+  loadCustomDocs();
 }
 function persist(){localStorage.setItem(SK,JSON.stringify(layouts)); localStorage.setItem(AK,activeId)}
 function active(){return layouts.find(l=>l.id===activeId)||mkDefault()}
@@ -578,7 +596,7 @@ function relLabel(dd){
 function showTooltip(e,dateId){
   if(editing)return;
   const f=DF.find(d=>d.id===dateId);if(!f)return;
-  const v=DATES[f.id],st=dst(v,f.c),col=stCol(st),dd=daysDiff(v);
+  const v=getDate(f.id),st=dst(v,f.c),col=stCol(st),dd=daysDiff(v);
   const tip=document.getElementById('dateTooltip');
   tip.querySelector('.tooltip-dot').style.background=col;
   tip.querySelector('.tooltip-dot').style.color=col;
@@ -601,7 +619,8 @@ const MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV',
 function openDateModal(dateId){
   if(editing)return;
   const f=DF.find(d=>d.id===dateId);if(!f)return;
-  const v=DATES[f.id],st=dst(v,f.c),col=stCol(st),cat=CATS.find(c=>c.id===f.c);
+  const v=getDate(f.id),st=dst(v,f.c),col=stCol(st),cat=CATS.find(c=>c.id===f.c);
+  const lbl=getLabel(f);
   const d=pd(v),dd=daysDiff(v),cc=cat?cat.color:'#64748b';
 
   const cal=d
@@ -615,19 +634,47 @@ function openDateModal(dateId){
 
   let bg='';
   if(f.f==='c')bg+='<span class="dm-badge" style="background:#ede9fe;color:#6d28d9">\u2699 Computed</span>';
-  if(f.f==='e')bg+='<span class="dm-badge" style="background:var(--cmg-primary-bg);color:var(--cmg-primary-dark)">\u270E Editable</span>';
+  if(f.f==='e'&&!isCustomDoc(f.id))bg+='<span class="dm-badge" style="background:var(--cmg-primary-bg);color:var(--cmg-primary-dark)">\u270E Editable</span>';
   if(f.f==='x'&&v){const dl=daysDiff(v);if(dl!==null){const urg=dl<30;bg+='<span class="dm-badge" style="background:'+(urg?'var(--cmg-red-bg)':'var(--cmg-amber-bg)')+';color:'+(urg?'var(--cmg-red)':'var(--cmg-amber)')+'">\u23F1 '+dl+'d to expiry</span>'}}
 
   const cp=cat?'<span class="dm-cat-pill"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cat.color+'"></span>'+cat.label+'</span>':'';
 
+  // Edit form for custom doc dates
+  let editSection='';
+  if(isCustomDoc(f.id)){
+    const curLabel=(customDocs[f.id]&&customDocs[f.id].label)||'';
+    const curDate=(customDocs[f.id]&&customDocs[f.id].date)||(DATES[f.id])||'';
+    editSection='<div class="dm-edit-section"><h4>\u270E Customize This Date</h4>'
+      +'<div class="dm-edit-row"><label for="docEditLabel">Name</label><input type="text" id="docEditLabel" value="'+curLabel.replace(/"/g,'&quot;')+'" placeholder="e.g. 1st Paystub Post-Closing"></div>'
+      +'<div class="dm-edit-row"><label for="docEditDate">Due Date</label><input type="date" id="docEditDate" value="'+curDate+'"></div>'
+      +'<div class="dm-edit-actions"><button class="btn btn-secondary btn-sm" onclick="clearCustomDoc(\''+f.id+'\')">Clear</button><button class="btn btn-primary btn-sm" onclick="saveCustomDoc(\''+f.id+'\')">Save</button></div></div>';
+  }
+
   document.querySelector('.dm-accent').style.background='linear-gradient(90deg,'+cc+','+cc+'88)';
-  document.querySelector('.dm-content').innerHTML='<button class="dm-close" onclick="closeDateModal()">&times;</button><div class="dm-header">'+cal+'<div class="dm-info"><div class="dm-label">'+f.l+'</div><div class="dm-formatted-date">'+(v?fmt(v):'Not yet set')+'</div>'+rel+'</div></div><div class="dm-divider"></div><div class="dm-body"><div class="dm-description">'+f.d+'</div><div class="dm-meta">'+cp+bg+'</div></div>';
+  document.querySelector('.dm-content').innerHTML='<button class="dm-close" onclick="closeDateModal()">&times;</button><div class="dm-header">'+cal+'<div class="dm-info"><div class="dm-label">'+lbl+'</div><div class="dm-formatted-date">'+(v?fmt(v):'Not yet set')+'</div>'+rel+'</div></div><div class="dm-divider"></div><div class="dm-body"><div class="dm-description">'+f.d+'</div><div class="dm-meta">'+cp+bg+'</div>'+editSection+'</div>';
 
   hideTooltip();
   document.getElementById('dateModalBackdrop').classList.add('open');
+  // Auto-focus the label input for custom docs
+  if(isCustomDoc(f.id)){const inp=document.getElementById('docEditLabel');if(inp)setTimeout(()=>inp.focus(),400)}
 }
 
 function closeDateModal(){document.getElementById('dateModalBackdrop').classList.remove('open')}
+
+function saveCustomDoc(id){
+  const label=(document.getElementById('docEditLabel').value||'').trim();
+  const date=document.getElementById('docEditDate').value||null;
+  customDocs[id]={label:label,date:date};
+  persistCustomDocs();
+  closeDateModal();
+  renderAll();
+}
+function clearCustomDoc(id){
+  delete customDocs[id];
+  persistCustomDocs();
+  closeDateModal();
+  renderAll();
+}
 
 /* ═══════════════════════════════════════════════════════════
    RENDERING
@@ -665,15 +712,16 @@ function renderStats(){
   const groups=editing?editGroups:active().groups;
   const ids=groups.flatMap(g=>g.ids);
   let c=0,t=0,u=0,p=0,x=0;
-  ids.forEach(id=>{const f=DF.find(z=>z.id===id);if(!f)return;const s=dst(DATES[id],f.c);if(s==='completed')c++;else if(s==='today')t++;else if(s==='upcoming')u++;else if(s==='expired')x++;else p++});
+  ids.forEach(id=>{const f=DF.find(z=>z.id===id);if(!f)return;const s=dst(getDate(id),f.c);if(s==='completed')c++;else if(s==='today')t++;else if(s==='upcoming')u++;else if(s==='expired')x++;else p++});
   document.getElementById('statsRow').innerHTML=`<div class="stat-chip"><span class="stat-dot dot-completed"></span>${c} Completed</div><div class="stat-chip"><span class="stat-dot dot-today"></span>${t} Today</div><div class="stat-chip"><span class="stat-dot dot-upcoming"></span>${u} Upcoming</div><div class="stat-chip"><span class="stat-dot dot-expired"></span>${x} Expired</div><div class="stat-chip"><span class="stat-dot dot-pending"></span>${p} Pending</div><div class="stat-chip" style="margin-left:auto;background:var(--cmg-primary-bg);color:var(--cmg-primary-dark);border-color:var(--cmg-primary-border)">${ids.length} of ${DF.length} dates shown</div>`;
 }
 
 function renderDateCard(f, groupId, borderColor){
-  const v=DATES[f.id], st=dst(v,f.c), col=stCol(st);
+  const v=getDate(f.id), st=dst(v,f.c), col=stCol(st), lbl=getLabel(f);
   let badges='';
   if(f.f==='c') badges+=`<span class="badge badge-computed">Computed</span>`;
-  if(f.f==='e') badges+=`<span class="badge badge-editable">Editable</span>`;
+  if(f.f==='e'&&!isCustomDoc(f.id)) badges+=`<span class="badge badge-editable">Editable</span>`;
+  if(isCustomDoc(f.id)) badges+=`<span class="badge badge-editable">\u270E Click to edit</span>`;
   if(f.f==='x'&&v){
     const dd=daysDiff(v), closing=DATES.scheduledClosingDate, cd=daysDiff(closing);
     if(dd!==null){
@@ -682,7 +730,7 @@ function renderDateCard(f, groupId, borderColor){
     }
   }
   const rm=editing?`<button class="date-card-remove" onclick="event.stopPropagation();removeDate('${groupId}','${f.id}')" title="Remove">&times;</button>`:'';
-  return `<div class="date-card" style="border-left-color:${borderColor}" onclick="openDateModal('${f.id}')" onmouseenter="showTooltip(event,'${f.id}')" onmouseleave="hideTooltip()" draggable="${editing}" ondragstart="onDateDragStart(event,'${f.id}','${groupId}')" ondragend="onDragEnd(event)" ondragover="onDateCardDragOver(event,'${f.id}','${groupId}')" ondragleave="onDateCardDragLeave(event)" ondrop="onDateCardDrop(event,'${f.id}','${groupId}')"><div class="date-card-top"><div class="date-card-label">${f.l}</div>${rm}</div><div class="date-card-value ${st}"><span class="date-status-dot" style="background:${col}"></span>${fmt(v)}</div>${badges?`<div class="date-card-badges">${badges}</div>`:''}</div>`;
+  return `<div class="date-card" style="border-left-color:${borderColor}" onclick="openDateModal('${f.id}')" onmouseenter="showTooltip(event,'${f.id}')" onmouseleave="hideTooltip()" draggable="${editing}" ondragstart="onDateDragStart(event,'${f.id}','${groupId}')" ondragend="onDragEnd(event)" ondragover="onDateCardDragOver(event,'${f.id}','${groupId}')" ondragleave="onDateCardDragLeave(event)" ondrop="onDateCardDrop(event,'${f.id}','${groupId}')"><div class="date-card-top"><div class="date-card-label">${lbl}</div>${rm}</div><div class="date-card-value ${st}"><span class="date-status-dot" style="background:${col}"></span>${fmt(v)}</div>${badges?`<div class="date-card-badges">${badges}</div>`:''}</div>`;
 }
 
 function renderGroups(){
@@ -747,7 +795,7 @@ function renderInventory(){
   let html='';
   CATS.forEach(cat=>{
     const fields=DF.filter(f=>f.c===cat.id);
-    const filtered=q?fields.filter(f=>f.l.toLowerCase().includes(q)||f.d.toLowerCase().includes(q)):fields;
+    const filtered=q?fields.filter(f=>getLabel(f).toLowerCase().includes(q)||f.d.toLowerCase().includes(q)):fields;
     if(!filtered.length)return;
     const col=collapsedI[cat.id];
     html+=`<div class="inv-cat"><div class="inv-cat-header" onclick="toggleInvCat('${cat.id}')"><div class="inv-cat-label"><span class="group-color-bar" style="background:${cat.color}"></span>${cat.label} (${filtered.length})</div><svg class="inv-cat-chevron${col?' collapsed':''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>`;
@@ -755,9 +803,9 @@ function renderInventory(){
       html+=`<div class="inv-cat-content">`;
       filtered.forEach(f=>{
         const isUsed=used.has(f.id);
-        const v=DATES[f.id];
+        const v=getDate(f.id);
         const dateVal=v?`<span class="inv-date-val">${fmt(v)}</span>`:'';
-        html+=`<div class="inv-date${isUsed?' used':''}" draggable="${!isUsed}" ondragstart="onInvDragStart(event,'${f.id}')" ondragend="onDragEnd(event)"><span class="grip">&#x2630;</span><span class="inv-date-name">${f.l}</span>${dateVal}</div>`;
+        html+=`<div class="inv-date${isUsed?' used':''}" draggable="${!isUsed}" ondragstart="onInvDragStart(event,'${f.id}')" ondragend="onDragEnd(event)"><span class="grip">&#x2630;</span><span class="inv-date-name">${getLabel(f)}</span>${dateVal}</div>`;
       });
       html+=`</div>`;
     }
@@ -853,6 +901,7 @@ function onGroupContentDrop(e,groupId){
   const el=document.getElementById('gc-'+groupId);if(el)el.classList.remove('drag-target');
   if(dragType!=='date'||!dragId)return;
   const g=editGroups.find(x=>x.id===groupId);if(!g)return;
+  const addedFromInv=!dragSourceGroup&&isCustomDoc(dragId)&&!customDocs[dragId];
   // Remove from source group if moving
   if(dragSourceGroup&&dragSourceGroup!==groupId){
     const sg=editGroups.find(x=>x.id===dragSourceGroup);
@@ -862,6 +911,8 @@ function onGroupContentDrop(e,groupId){
   if(g.ids.includes(dragId)) g.ids=g.ids.filter(id=>id!==dragId);
   g.ids.push(dragId);
   renderGroups();renderInventory();renderStats();
+  // Auto-open edit modal when adding an unconfigured custom doc from inventory
+  if(addedFromInv){const did=dragId;setTimeout(()=>{editing=false;openDateModal(did);editing=true},300)}
 }
 
 // Date card reorder — drag over individual cards for precise placement
@@ -889,6 +940,7 @@ function onDateCardDrop(e,targetDateId,groupId){
   document.querySelectorAll('.drop-before,.drop-after,.drag-target').forEach(el=>el.classList.remove('drop-before','drop-after','drag-target'));
   if(dragType!=='date'||!dragId||dragId===targetDateId)return;
   const g=editGroups.find(x=>x.id===groupId);if(!g)return;
+  const addedFromInv=!dragSourceGroup&&isCustomDoc(dragId)&&!customDocs[dragId];
   // Remove from source group if cross-group move
   if(dragSourceGroup&&dragSourceGroup!==groupId){
     const sg=editGroups.find(x=>x.id===dragSourceGroup);
@@ -901,6 +953,7 @@ function onDateCardDrop(e,targetDateId,groupId){
   if(idx<0)idx=g.ids.length;
   g.ids.splice(before?idx:idx+1,0,dragId);
   renderGroups();renderInventory();renderStats();
+  if(addedFromInv){const did=dragId;setTimeout(()=>{editing=false;openDateModal(did);editing=true},300)}
 }
 
 // Group reorder — drag a group over another group to swap positions
