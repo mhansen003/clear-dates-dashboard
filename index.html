@@ -204,6 +204,8 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
 .inv-date:active{cursor:grabbing}
 .inv-date.used{opacity:.35;cursor:default;pointer-events:none}
 .inv-date .grip{color:var(--cmg-text-muted);font-size:10px;flex-shrink:0;width:14px;text-align:center}
+.inv-date-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-date-val{flex-shrink:0;font-size:10.5px;font-weight:600;color:var(--cmg-text-muted);margin-left:auto;padding-left:6px}
 
 /* ── Add Group Button ──────────────────────────────────── */
 .add-group-btn{width:100%;padding:12px;border:2px dashed var(--cmg-border);border-radius:var(--cmg-radius);background:none;font-family:inherit;font-size:12px;font-weight:600;color:var(--cmg-primary);cursor:pointer;display:none;transition:border-color .15s,background .15s}
@@ -671,10 +673,19 @@ function renderGroups(){
     el.innerHTML=`${editing?'<button class="add-group-btn" onclick="addGroup()">+ Add Group</button>':''}<div class="empty-state"><h3>No groups yet</h3><p>${editing?'Click "+ Add Group" to get started.':'Click "Customize" to build your layout.'}</p></div>${editing?'<button class="add-group-btn" onclick="addGroup()">+ Add Group</button>':''}`;
     return;
   }
+  const halfSvg=`<svg class="dz-icon" width="24" height="18" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="10" height="16" rx="2"/><rect x="13" y="1" width="10" height="16" rx="2" stroke-dasharray="3 2" opacity=".35"/></svg>`;
+  const fullSvg=`<svg class="dz-icon" width="24" height="18" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="22" height="16" rx="2"/></svg>`;
+  function dzRow(pos){
+    return `<div class="group-drop-row"><div class="group-drop-target" ondragover="onDzOver(event)" ondragleave="onDzLeave(event)" ondrop="onDzDrop(event,${pos},1)">${halfSvg}<span class="dz-label">Half Width</span></div><div class="group-drop-target" ondragover="onDzOver(event)" ondragleave="onDzLeave(event)" ondrop="onDzDrop(event,${pos},2)">${fullSvg}<span class="dz-label">Full Width</span></div></div>`;
+  }
+
   let html='';
   html+=`<button class="add-group-btn" onclick="addGroup(0)">+ Add Group</button>`;
-  html+=`<div class="groups-grid">`;
+  html+=`<div class="groups-grid" id="groupsGrid">`;
   groups.forEach((g,i)=>{
+    // Drop zone BEFORE each group (only in edit mode)
+    if(editing) html+=dzRow(i);
+
     const fields=g.ids.map(id=>DF.find(f=>f.id===id)).filter(Boolean);
     const col=collapsedG[g.id];
     const span=g.span||1;
@@ -701,6 +712,8 @@ function renderGroups(){
     }
     html+=`</div>`;
   });
+  // Final drop zone AFTER last group
+  if(editing) html+=dzRow(groups.length);
   html+=`</div>`; // close groups-grid
   html+=`<button class="add-group-btn" onclick="addGroup()">+ Add Group</button>`;
   if(editing) html+=`<div style="height:60px"></div>`;
@@ -723,7 +736,9 @@ function renderInventory(){
       html+=`<div class="inv-cat-content">`;
       filtered.forEach(f=>{
         const isUsed=used.has(f.id);
-        html+=`<div class="inv-date${isUsed?' used':''}" draggable="${!isUsed}" ondragstart="onInvDragStart(event,'${f.id}')" ondragend="onDragEnd(event)"><span class="grip">&#x2630;</span>${f.l}</div>`;
+        const v=DATES[f.id];
+        const dateVal=v?`<span class="inv-date-val">${fmt(v)}</span>`:'';
+        html+=`<div class="inv-date${isUsed?' used':''}" draggable="${!isUsed}" ondragstart="onInvDragStart(event,'${f.id}')" ondragend="onDragEnd(event)"><span class="grip">&#x2630;</span><span class="inv-date-name">${f.l}</span>${dateVal}</div>`;
       });
       html+=`</div>`;
     }
@@ -743,7 +758,8 @@ function onInvDragStart(e,dateId){
   dragType='date'; dragId=dateId; dragSourceGroup=null;
   e.dataTransfer.effectAllowed='copy';
   e.dataTransfer.setData('text/plain',dateId);
-  e.target.style.opacity='.4';
+  e.target.classList.add('inv-date-dragging');
+  const grid=document.getElementById('groupsGrid');if(grid)grid.classList.add('date-receiving');
 }
 
 // Date drag from a group (to move between groups)
@@ -753,6 +769,7 @@ function onDateDragStart(e,dateId,groupId){
   e.dataTransfer.effectAllowed='move';
   e.dataTransfer.setData('text/plain',dateId);
   e.target.classList.add('dragging');
+  const grid=document.getElementById('groupsGrid');if(grid)grid.classList.add('date-receiving');
   e.stopPropagation(); // don't trigger group drag
 }
 
@@ -762,13 +779,45 @@ function onGroupDragStart(e,groupId){
   dragType='group'; dragId=groupId; dragSourceGroup=null;
   e.dataTransfer.effectAllowed='move';
   e.dataTransfer.setData('text/plain',groupId);
-  setTimeout(()=>{const el=document.getElementById('gp-'+groupId);if(el)el.classList.add('dragging')},0);
+  setTimeout(()=>{
+    const el=document.getElementById('gp-'+groupId);if(el)el.classList.add('dragging');
+    const grid=document.getElementById('groupsGrid');if(grid)grid.classList.add('group-dragging');
+  },0);
+}
+
+// Date drag: add receiving state
+function onInvDragStartVisual(){
+  const grid=document.getElementById('groupsGrid');if(grid)grid.classList.add('date-receiving');
 }
 
 function onDragEnd(e){
   e.target.style.opacity='';e.target.classList.remove('dragging');
-  document.querySelectorAll('.dragging,.drag-over-group,.drag-target,.active').forEach(el=>{el.classList.remove('dragging','drag-over-group','drag-target','active')});
+  document.querySelectorAll('.dragging,.drag-over-group,.drag-target,.active,.dz-hover,.date-target').forEach(el=>{el.classList.remove('dragging','drag-over-group','drag-target','active','dz-hover','date-target')});
+  const grid=document.getElementById('groupsGrid');
+  if(grid){grid.classList.remove('group-dragging','date-receiving')}
   dragType=null;dragId=null;dragSourceGroup=null;
+}
+
+// Drop zone handlers — half/full width targets between groups
+function onDzOver(e){
+  if(dragType!=='group')return;
+  e.preventDefault();e.dataTransfer.dropEffect='move';
+  e.currentTarget.classList.add('dz-hover');
+}
+function onDzLeave(e){
+  e.currentTarget.classList.remove('dz-hover');
+}
+function onDzDrop(e,position,span){
+  e.preventDefault();e.currentTarget.classList.remove('dz-hover');
+  if(dragType!=='group'||!dragId)return;
+  const fromIdx=editGroups.findIndex(g=>g.id===dragId);
+  if(fromIdx<0)return;
+  const [moved]=editGroups.splice(fromIdx,1);
+  moved.span=span;
+  // Adjust position if the removal shifted indices
+  const insertAt=position>fromIdx?position-1:position;
+  editGroups.splice(insertAt,0,moved);
+  renderGroups();
 }
 
 // Drop date onto group content
