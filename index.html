@@ -135,6 +135,16 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
 .badge-computed{background:#ede9fe;color:#6d28d9} .badge-editable{background:var(--cmg-primary-bg);color:var(--cmg-primary-dark)}
 .badge-countdown{background:var(--cmg-amber-bg);color:var(--cmg-amber)}
 .badge-countdown.urgent{background:var(--cmg-red-bg);color:var(--cmg-red)}
+/* ── Custom Doc Date Cards ────────────────────────────── */
+.date-card.custom-doc{border:1.5px dashed #db277766;border-left:3px solid #db2777;background:linear-gradient(135deg,#fdf2f8 0%,#ffffff 100%);position:relative}
+.date-card.custom-doc:hover{box-shadow:0 4px 16px rgba(219,39,119,.12);border-color:#db2777}
+.date-card.custom-doc .date-card-label{color:#db2777}
+.date-card.custom-doc .custom-doc-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#fce7f3;color:#db2777;font-size:10px;flex-shrink:0;margin-right:4px;font-weight:700}
+.date-card.custom-doc.unconfigured{border-style:dashed;background:repeating-linear-gradient(135deg,#fdf2f8,#fdf2f8 8px,#fff0f6 8px,#fff0f6 16px)}
+.date-card.custom-doc.unconfigured .date-card-label{font-style:italic}
+.badge-custom{background:#fce7f3;color:#db2777}
+.condensed .date-card.custom-doc{border-left:3px solid #db2777;border-top:none;border-right:none;border-bottom:1px solid var(--cmg-border-light);background:linear-gradient(90deg,#fdf2f8 0%,#ffffff 40%)}
+.condensed .date-card.custom-doc.unconfigured{background:repeating-linear-gradient(90deg,#fdf2f8,#fdf2f8 8px,#fff0f6 8px,#fff0f6 16px)}
 .editing .date-card{cursor:grab} .editing .date-card:active{cursor:grabbing}
 
 /* ── Drag: Group Drop Zones ──────────────────────────── */
@@ -212,6 +222,9 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
 .inv-date .grip{color:var(--cmg-text-muted);font-size:10px;flex-shrink:0;width:14px;text-align:center}
 .inv-date-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .inv-date-val{flex-shrink:0;font-size:10.5px;font-weight:600;color:var(--cmg-text-muted);margin-left:auto;padding-left:6px}
+.inv-custom-doc{background:#fdf2f8;border:1px dashed #db277744;border-radius:4px}
+.inv-custom-doc:hover{background:#fce7f3;border-color:#db2777}
+.inv-custom-doc .inv-date-name{color:#db2777;font-weight:600}
 
 /* ── Add Group Button ──────────────────────────────────── */
 .add-group-btn{width:100%;padding:12px;border:2px dashed var(--cmg-border);border-radius:var(--cmg-radius);background:none;font-family:inherit;font-size:12px;font-weight:600;color:var(--cmg-primary);cursor:pointer;display:none;transition:border-color .15s,background .15s}
@@ -535,14 +548,14 @@ function mkDefault(){
   return {
     id:'default', name:'Default \u2014 LO Overview', isDefault:true,
     groups:[
+      {id:'g-docdue',    name:'Doc Due Dates',    color:'#db2777', span:2, ids:['customDocDueDate1','customDocDueDate2']},
+      {id:'g-builder',   name:'Builder Business', color:'#86ba41', span:2, ids:['upgradeDecisionDue','additionalDepositDue','rateLockDueDate','floatDownWindowOpens','floatDownWindowCloses']},
       {id:'g-milestone', name:'Key Milestones', color:'#138890', span:2, ids:['applicationDate','intentToProceed','fileReceived','uwReceived','approvedDate','clearToClose','docsOut','docsBack','funded']},
       {id:'g-trid',      name:'TRID Compliance',color:'#7c3aed', span:1, ids:['leDueDate','initialLeDeliveryDate','cdDeliveredDate','cdReceivedDate','earliestClosingDate','scheduledClosingDate']},
       {id:'g-lock',      name:'Rate Lock',      color:'#d97706', span:1, ids:['dateLocked','lockStartDate','lockExpirationDate']},
       {id:'g-appraisal', name:'Appraisal',      color:'#0d9488', span:1, ids:['appraisalOrderCreated','appraisalCompleted','appraisalReceivedByCmg','appraisalApprovedByUw']},
       {id:'g-expiry',    name:'Expirations',     color:'#cb3a31', span:1, ids:['creditDocExpiration','appraisalExpirationDate','assetDocExpirationDate','incomeDocExpirationDate','approvalExpires']},
       {id:'g-contract',  name:'Contract',        color:'#0891b2', span:1, ids:['purchaseContractDate','contractClosingDate','commitmentDate','firstPaymentDate']},
-      {id:'g-builder',   name:'Builder Business', color:'#86ba41', span:1, ids:['upgradeDecisionDue','additionalDepositDue','rateLockDueDate','floatDownWindowOpens','floatDownWindowCloses']},
-      {id:'g-docdue',    name:'Doc Due Dates',    color:'#db2777', span:1, ids:['customDocDueDate1','customDocDueDate2']},
     ]
   };
 }
@@ -718,10 +731,11 @@ function renderStats(){
 
 function renderDateCard(f, groupId, borderColor){
   const v=getDate(f.id), st=dst(v,f.c), col=stCol(st), lbl=getLabel(f);
+  const isCd=isCustomDoc(f.id), hasConfig=isCd&&customDocs[f.id]&&customDocs[f.id].label;
   let badges='';
   if(f.f==='c') badges+=`<span class="badge badge-computed">Computed</span>`;
-  if(f.f==='e'&&!isCustomDoc(f.id)) badges+=`<span class="badge badge-editable">Editable</span>`;
-  if(isCustomDoc(f.id)) badges+=`<span class="badge badge-editable">\u270E Click to edit</span>`;
+  if(f.f==='e'&&!isCd) badges+=`<span class="badge badge-editable">Editable</span>`;
+  if(isCd) badges+=`<span class="badge badge-custom">${hasConfig?'\u270E Edit':'\u270E Click to name'}</span>`;
   if(f.f==='x'&&v){
     const dd=daysDiff(v), closing=DATES.scheduledClosingDate, cd=daysDiff(closing);
     if(dd!==null){
@@ -730,7 +744,10 @@ function renderDateCard(f, groupId, borderColor){
     }
   }
   const rm=editing?`<button class="date-card-remove" onclick="event.stopPropagation();removeDate('${groupId}','${f.id}')" title="Remove">&times;</button>`:'';
-  return `<div class="date-card" style="border-left-color:${borderColor}" onclick="openDateModal('${f.id}')" onmouseenter="showTooltip(event,'${f.id}')" onmouseleave="hideTooltip()" draggable="${editing}" ondragstart="onDateDragStart(event,'${f.id}','${groupId}')" ondragend="onDragEnd(event)" ondragover="onDateCardDragOver(event,'${f.id}','${groupId}')" ondragleave="onDateCardDragLeave(event)" ondrop="onDateCardDrop(event,'${f.id}','${groupId}')"><div class="date-card-top"><div class="date-card-label">${lbl}</div>${rm}</div><div class="date-card-value ${st}"><span class="date-status-dot" style="background:${col}"></span>${fmt(v)}</div>${badges?`<div class="date-card-badges">${badges}</div>`:''}</div>`;
+  const cdCls=isCd?(hasConfig?' custom-doc':' custom-doc unconfigured'):'';
+  const icon=isCd?'<span class="custom-doc-icon">\u270E</span>':'';
+  const bdrStyle=isCd?'':` style="border-left-color:${borderColor}"`;
+  return `<div class="date-card${cdCls}"${bdrStyle} onclick="openDateModal('${f.id}')" onmouseenter="showTooltip(event,'${f.id}')" onmouseleave="hideTooltip()" draggable="${editing}" ondragstart="onDateDragStart(event,'${f.id}','${groupId}')" ondragend="onDragEnd(event)" ondragover="onDateCardDragOver(event,'${f.id}','${groupId}')" ondragleave="onDateCardDragLeave(event)" ondrop="onDateCardDrop(event,'${f.id}','${groupId}')"><div class="date-card-top"><div class="date-card-label">${icon}${lbl}</div>${rm}</div><div class="date-card-value ${st}"><span class="date-status-dot" style="background:${col}"></span>${fmt(v)}</div>${badges?`<div class="date-card-badges">${badges}</div>`:''}</div>`;
 }
 
 function renderGroups(){
@@ -805,7 +822,8 @@ function renderInventory(){
         const isUsed=used.has(f.id);
         const v=getDate(f.id);
         const dateVal=v?`<span class="inv-date-val">${fmt(v)}</span>`:'';
-        html+=`<div class="inv-date${isUsed?' used':''}" draggable="${!isUsed}" ondragstart="onInvDragStart(event,'${f.id}')" ondragend="onDragEnd(event)"><span class="grip">&#x2630;</span><span class="inv-date-name">${getLabel(f)}</span>${dateVal}</div>`;
+        const cdInv=isCustomDoc(f.id)?' inv-custom-doc':'';
+        html+=`<div class="inv-date${isUsed?' used':''}${cdInv}" draggable="${!isUsed}" ondragstart="onInvDragStart(event,'${f.id}')" ondragend="onDragEnd(event)"><span class="grip">&#x2630;</span><span class="inv-date-name">${isCustomDoc(f.id)?'\u270E ':''}${getLabel(f)}</span>${dateVal}</div>`;
       });
       html+=`</div>`;
     }
