@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLEAR — Date Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   CLEAR 2.0 Design Tokens
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  --cmg-primary:#138890; --cmg-primary-light:#32a4ac; --cmg-primary-dark:#047880;
+  --cmg-primary-bg:#eaf6f7; --cmg-primary-border:#d1edef;
+  --cmg-green:#609e5b; --cmg-green-bg:#e8f5e9;
+  --cmg-amber:#d97706; --cmg-amber-bg:#fff8e1;
+  --cmg-red:#cb3a31; --cmg-red-bg:#ffe7e6;
+  --cmg-bg:#f4f4f5; --cmg-bg-alt:#f9f9fa; --cmg-surface:#ffffff;
+  --cmg-panel-header:#e4e4e4;
+  --cmg-text:#495057; --cmg-text-label:#5f5f5f; --cmg-text-muted:#929292; --cmg-text-dark:#3b3b3b;
+  --cmg-border:#dee2e6; --cmg-border-light:#e4e4e4;
+  --cmg-shadow:0 2px 10px 0 rgba(0,0,0,.05); --cmg-shadow-md:0 2px 10px 0 rgba(0,0,0,.1);
+  --cmg-radius:6px; --cmg-radius-pill:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:var(--cmg-text);background:var(--cmg-bg)}
+
+/* ── Navbar ────────────────────────────────────────────── */
+.navbar{position:sticky;top:0;z-index:100;background:var(--cmg-bg-alt);box-shadow:var(--cmg-shadow-md);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.navbar-brand{display:flex;align-items:center;gap:10px}
+.navbar-logo{font-size:20px;font-weight:800;color:var(--cmg-primary);letter-spacing:-.5px}
+.navbar-divider{width:1px;height:20px;background:var(--cmg-border-light)}
+.navbar-title{font-size:13px;font-weight:600;color:var(--cmg-text-label)}
+.navbar-actions{display:flex;align-items:center;gap:8px}
+
+/* ── Loan Info Bar ─────────────────────────────────────── */
+.loan-bar{background:var(--cmg-surface);border-bottom:1px solid var(--cmg-border-light);padding:10px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px}
+.loan-number{font-family:'Courier New',monospace;font-size:13px;font-weight:700;color:var(--cmg-primary)}
+.loan-detail{font-size:12px;color:var(--cmg-text-label)} .loan-detail strong{color:var(--cmg-text)}
+.loan-sep{color:var(--cmg-border-light)}
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:var(--cmg-radius-pill);font-size:11px;font-weight:700;background:var(--cmg-primary-bg);color:var(--cmg-primary-dark);border:1px solid var(--cmg-primary-border)}
+
+/* ── Buttons ───────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 15px;border-radius:var(--cmg-radius-pill);font-family:inherit;font-size:12px;font-weight:700;line-height:17px;cursor:pointer;border:none;transition:background .15s,box-shadow .15s}
+.btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--cmg-primary-border)}
+.btn-primary{background:var(--cmg-primary-dark);color:#fff} .btn-primary:hover{background:var(--cmg-primary)}
+.btn-secondary{background:var(--cmg-primary-bg);color:var(--cmg-primary-dark);border:1px solid var(--cmg-primary-border)} .btn-secondary:hover{background:var(--cmg-primary-border)}
+.btn-danger{background:var(--cmg-red-bg);color:var(--cmg-red);border:1px solid #f5c6c6} .btn-danger:hover{background:#fdd}
+.btn-ghost{background:transparent;color:var(--cmg-text-muted);padding:6px 8px} .btn-ghost:hover{background:var(--cmg-bg);color:var(--cmg-text)}
+.btn-sm{padding:4px 10px;font-size:11px}
+
+/* ── Mode Banner ───────────────────────────────────────── */
+.mode-banner{background:var(--cmg-primary);color:#fff;padding:8px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;font-weight:600;display:none}
+.mode-banner.visible{display:flex}
+.mode-banner .hint{opacity:.8;font-weight:400}
+
+/* ── Stats Row ─────────────────────────────────────────── */
+.stats-row{display:flex;gap:12px;padding:12px 20px;flex-wrap:wrap}
+.stat-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--cmg-radius-pill);font-size:11px;font-weight:600;background:var(--cmg-surface);border:1px solid var(--cmg-border-light);color:var(--cmg-text-label)}
+.stat-dot{width:8px;height:8px;border-radius:50%}
+.dot-completed{background:var(--cmg-green)} .dot-today{background:var(--cmg-primary)} .dot-upcoming{background:var(--cmg-amber)} .dot-pending{background:var(--cmg-border)} .dot-expired{background:var(--cmg-red)}
+
+/* ── Layout ────────────────────────────────────────────── */
+.app-body{display:flex;min-height:calc(100vh - 140px)}
+.main-area{flex:1;padding:0 20px 24px;max-width:1400px;transition:margin-right .3s}
+.main-area.with-inventory{margin-right:360px}
+
+/* ── Layout Selector ───────────────────────────────────── */
+.controls-bar{padding:12px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.controls-left{display:flex;align-items:center;gap:10px}
+.controls-right{display:flex;align-items:center;gap:8px}
+.layout-select{position:relative}
+.layout-btn{display:flex;align-items:center;gap:6px;padding:6px 14px;background:var(--cmg-surface);border:1px solid var(--cmg-border);border-radius:var(--cmg-radius);font-family:inherit;font-size:12px;font-weight:600;color:var(--cmg-text);cursor:pointer;min-width:180px;justify-content:space-between}
+.layout-btn:hover{border-color:var(--cmg-primary-light)}
+.layout-btn svg{width:12px;height:12px;color:var(--cmg-text-muted);transition:transform .2s}
+.layout-btn.open svg{transform:rotate(180deg)}
+.layout-dropdown{position:absolute;top:100%;left:0;margin-top:4px;min-width:260px;background:var(--cmg-surface);border:1px solid var(--cmg-border);border-radius:var(--cmg-radius);box-shadow:var(--cmg-shadow-md);z-index:50;overflow:hidden}
+.layout-dropdown-item{display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 12px;border:none;background:none;font-family:inherit;font-size:12px;color:var(--cmg-text);cursor:pointer;text-align:left}
+.layout-dropdown-item:hover{background:var(--cmg-primary-bg)}
+.layout-dropdown-item.active{background:var(--cmg-primary-bg);color:var(--cmg-primary-dark);font-weight:600}
+.layout-dropdown-item .del-btn{background:none;border:none;color:var(--cmg-text-muted);cursor:pointer;padding:2px 5px;font-size:14px;line-height:1;border-radius:3px} .layout-dropdown-item .del-btn:hover{color:var(--cmg-red);background:var(--cmg-red-bg)}
+.layout-dropdown-divider{height:1px;background:var(--cmg-border-light);margin:2px 0}
+.layout-dropdown-item.new-layout{color:var(--cmg-primary);font-weight:600}
+
+/* ── Group Panels ──────────────────────────────────────── */
+.group-panel{margin-bottom:12px;border-radius:var(--cmg-radius);box-shadow:var(--cmg-shadow);overflow:hidden;transition:box-shadow .2s,outline .2s;outline:2px solid transparent}
+.group-panel.drag-over-group{outline:2px solid var(--cmg-primary-light);box-shadow:var(--cmg-shadow-md)}
+.group-panel.dragging{opacity:.4}
+.group-header{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--cmg-panel-header);user-select:none;min-height:36px}
+.group-drag-handle{cursor:grab;color:var(--cmg-text-muted);padding:2px 4px;display:none;flex-shrink:0}
+.group-drag-handle:active{cursor:grabbing}
+.editing .group-drag-handle{display:block}
+.group-color-bar{width:4px;height:16px;border-radius:2px;flex-shrink:0}
+.group-name{font-size:13px;font-weight:700;color:var(--cmg-text-dark);flex:1;cursor:default;border:none;background:none;font-family:inherit;padding:0}
+.editing .group-name{cursor:text;border-bottom:1px dashed var(--cmg-text-muted);padding:0 4px}
+.editing .group-name:focus{outline:none;border-bottom-color:var(--cmg-primary)}
+.group-count{font-size:11px;font-weight:600;color:var(--cmg-text-muted);padding:2px 8px;background:rgba(0,0,0,.06);border-radius:10px}
+.group-actions{display:none;align-items:center;gap:4px}
+.editing .group-actions{display:flex}
+.group-chevron{transition:transform .2s;color:var(--cmg-text-muted);cursor:pointer;padding:2px}
+.group-chevron.collapsed{transform:rotate(-90deg)}
+.group-content{background:var(--cmg-surface);padding:14px;min-height:40px;transition:background .15s}
+.group-content.collapsed{display:none}
+.group-content.drag-target{background:var(--cmg-primary-bg)}
+.group-content.empty-target{border:2px dashed var(--cmg-primary-border);background:var(--cmg-primary-bg);display:flex;align-items:center;justify-content:center;min-height:60px;color:var(--cmg-primary);font-weight:600;font-size:12px}
+
+/* ── Drop placeholder between groups ───────────────────── */
+.drop-zone{height:4px;margin:2px 0;border-radius:2px;transition:height .15s,background .15s}
+.drop-zone.active{height:8px;background:var(--cmg-primary-light)}
+
+/* ── Date Cards ────────────────────────────────────────── */
+.date-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:8px}
+.date-card{padding:10px 12px;border:1px solid var(--cmg-border-light);border-radius:4px;border-left:3px solid transparent;transition:box-shadow .15s,opacity .2s;position:relative}
+.date-card:hover{box-shadow:var(--cmg-shadow)}
+.date-card.dragging{opacity:.3}
+.date-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:4px}
+.date-card-label{font-size:11px;font-weight:600;color:var(--cmg-text-label);margin-bottom:2px;line-height:1.3}
+.date-card-remove{display:none;background:none;border:none;color:var(--cmg-text-muted);cursor:pointer;font-size:13px;line-height:1;padding:0 2px;flex-shrink:0}
+.editing .date-card-remove{display:block}
+.date-card-remove:hover{color:var(--cmg-red)}
+.date-card-value{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.date-card-value.completed{color:var(--cmg-green)} .date-card-value.today{color:var(--cmg-primary)}
+.date-card-value.upcoming{color:var(--cmg-amber)} .date-card-value.expired{color:var(--cmg-red)}
+.date-card-value.pending{color:var(--cmg-text-muted);font-weight:400;font-style:italic}
+.date-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.date-card-badges{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+.badge-computed{background:#ede9fe;color:#6d28d9} .badge-editable{background:var(--cmg-primary-bg);color:var(--cmg-primary-dark)}
+.badge-countdown{background:var(--cmg-amber-bg);color:var(--cmg-amber)}
+.badge-countdown.urgent{background:var(--cmg-red-bg);color:var(--cmg-red)}
+.editing .date-card{cursor:grab} .editing .date-card:active{cursor:grabbing}
+
+/* ── Inventory Panel ───────────────────────────────────── */
+.inventory{position:fixed;top:0;right:0;width:360px;height:100vh;background:var(--cmg-surface);border-left:1px solid var(--cmg-border);box-shadow:-4px 0 20px rgba(0,0,0,.08);z-index:90;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s ease}
+.inventory.open{transform:translateX(0)}
+.inventory-header{padding:12px 16px;background:var(--cmg-primary);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.inventory-header h3{font-size:14px;font-weight:700}
+.inventory-close{background:none;border:none;color:rgba(255,255,255,.8);font-size:18px;cursor:pointer;padding:2px 6px;border-radius:4px} .inventory-close:hover{color:#fff;background:rgba(255,255,255,.15)}
+.inventory-search{padding:10px 16px;border-bottom:1px solid var(--cmg-border-light);flex-shrink:0}
+.inventory-search input{width:100%;padding:7px 12px;border:1px solid var(--cmg-border);border-radius:var(--cmg-radius);font-family:inherit;font-size:12px;background:var(--cmg-bg);color:var(--cmg-text);outline:none}
+.inventory-search input:focus{border-color:var(--cmg-primary-light);box-shadow:0 0 0 2px rgba(50,164,172,.15)}
+.inventory-body{flex:1;overflow-y:auto;padding:6px 0}
+.inv-cat{padding:0 16px;margin-bottom:2px}
+.inv-cat-header{display:flex;align-items:center;justify-content:space-between;padding:6px 0 3px;border-bottom:1px solid var(--cmg-border-light);margin-bottom:3px;cursor:pointer}
+.inv-cat-label{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.inv-cat-chevron{transition:transform .2s;color:var(--cmg-text-muted)} .inv-cat-chevron.collapsed{transform:rotate(-90deg)}
+.inv-cat-content.collapsed{display:none}
+.inv-date{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;cursor:grab;font-size:12px;color:var(--cmg-text);transition:background .1s}
+.inv-date:hover{background:var(--cmg-primary-bg)}
+.inv-date:active{cursor:grabbing}
+.inv-date.used{opacity:.35;cursor:default;pointer-events:none}
+.inv-date .grip{color:var(--cmg-text-muted);font-size:10px;flex-shrink:0;width:14px;text-align:center}
+
+/* ── Add Group Button ──────────────────────────────────── */
+.add-group-btn{width:100%;padding:12px;border:2px dashed var(--cmg-border);border-radius:var(--cmg-radius);background:none;font-family:inherit;font-size:12px;font-weight:600;color:var(--cmg-primary);cursor:pointer;display:none;transition:border-color .15s,background .15s}
+.add-group-btn:hover{border-color:var(--cmg-primary);background:var(--cmg-primary-bg)}
+.editing .add-group-btn{display:block}
+
+/* ── Footer Save Bar ───────────────────────────────────── */
+.save-bar{position:fixed;bottom:0;left:0;right:0;z-index:95;background:var(--cmg-surface);border-top:1px solid var(--cmg-border);padding:10px 20px;display:none;align-items:center;justify-content:space-between;box-shadow:0 -2px 10px rgba(0,0,0,.08)}
+.save-bar.visible{display:flex}
+.save-bar-left{display:flex;align-items:center;gap:10px}
+.save-bar-right{display:flex;align-items:center;gap:8px}
+.save-name-input{padding:6px 10px;border:1px solid var(--cmg-border);border-radius:var(--cmg-radius);font-family:inherit;font-size:12px;width:200px;outline:none}
+.save-name-input:focus{border-color:var(--cmg-primary-light)}
+
+/* ── Empty ─────────────────────────────────────────────── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--cmg-text-muted)}
+.empty-state h3{font-size:16px;color:var(--cmg-text);margin-bottom:6px}
+.empty-state p{font-size:13px}
+
+/* ── Print ─────────────────────────────────────────────── */
+@media print{.navbar{position:static;box-shadow:none}.controls-bar,.stats-row,.mode-banner,.inventory,.save-bar,.add-group-btn,.group-drag-handle,.group-actions,.date-card-remove{display:none!important}.group-panel{break-inside:avoid;box-shadow:none;border:1px solid #ddd}body{background:#fff}}
+@media(max-width:768px){.navbar{padding:8px 12px}.loan-bar{padding:8px 12px}.main-area{padding:0 12px 16px}.date-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.inventory{width:100vw}}
+
+/* ── Color Picker ──────────────────────────────────────── */
+.color-dots{display:flex;gap:4px}
+.color-dot{width:16px;height:16px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:border-color .15s}
+.color-dot:hover,.color-dot.active{border-color:var(--cmg-text)}
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <span class="navbar-logo">CLEAR</span>
+    <div class="navbar-divider"></div>
+    <span class="navbar-title">Date Dashboard</span>
+  </div>
+  <div class="navbar-actions">
+    <button class="btn btn-secondary" onclick="window.print()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print
+    </button>
+  </div>
+</nav>
+
+<!-- Loan Info Bar -->
+<div class="loan-bar" id="loanBar"></div>
+
+<!-- Controls Bar -->
+<div class="controls-bar">
+  <div class="controls-left"><div class="layout-select" id="layoutSelect"></div></div>
+  <div class="controls-right" id="controlsRight"></div>
+</div>
+
+<!-- Edit Mode Banner -->
+<div class="mode-banner" id="modeBanner">
+  <span>Editing Layout &mdash; <span class="hint">Drag dates from the inventory into your groups. Drag groups to reorder.</span></span>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff" onclick="cancelEdit()">Cancel</button>
+    <button class="btn btn-sm" style="background:#fff;color:var(--cmg-primary-dark)" onclick="saveEdit()">Save Layout</button>
+  </div>
+</div>
+
+<!-- Stats Row -->
+<div class="stats-row" id="statsRow"></div>
+
+<!-- Main Content -->
+<div class="main-area" id="mainArea"></div>
+
+<!-- Inventory Panel -->
+<div class="inventory" id="inventory">
+  <div class="inventory-header"><h3>Date Inventory</h3><button class="inventory-close" onclick="closeInventory()">&times;</button></div>
+  <div class="inventory-search"><input type="text" id="invSearch" placeholder="Search dates..." oninput="renderInventory()"></div>
+  <div class="inventory-body" id="invBody"></div>
+</div>
+
+<!-- Save-As Bar -->
+<div class="save-bar" id="saveBar">
+  <div class="save-bar-left">
+    <span style="font-weight:600;color:var(--cmg-text-label)">Save as:</span>
+    <input type="text" id="saveNameInput" class="save-name-input" placeholder="Layout name...">
+  </div>
+  <div class="save-bar-right">
+    <button class="btn btn-ghost" onclick="closeSaveBar()">Cancel</button>
+    <button class="btn btn-primary" onclick="doSaveAs()">Save New Layout</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   DATA DEFINITIONS
+   ═══════════════════════════════════════════════════════════ */
+
+const CATS = [
+  {id:'status',    label:'Loan Status Milestones', color:'#138890'},
+  {id:'trid',      label:'TRID / Regulatory',      color:'#7c3aed'},
+  {id:'key',       label:'Key Dates',              color:'#047880'},
+  {id:'lock',      label:'Rate Lock',              color:'#d97706'},
+  {id:'expiration',label:'Expiration Dates',        color:'#cb3a31'},
+  {id:'contract',  label:'Contract & Commitment',   color:'#0891b2'},
+  {id:'appraisal', label:'Appraisal',              color:'#0d9488'},
+  {id:'disclosure',label:'Disclosures & Consent',   color:'#4f46e5'},
+  {id:'other',     label:'Other Dates',            color:'#64748b'},
+];
+
+const GROUP_COLORS = ['#138890','#7c3aed','#047880','#d97706','#cb3a31','#0891b2','#0d9488','#4f46e5','#64748b','#2563eb','#86ba41','#db2777'];
+
+// flags: c = computed, e = editable, x = has "days till" countdown
+const DF = [
+  // Status
+  {id:'prospect',           l:'Prospect',              c:'status',  d:'Date loan prospect was created'},
+  {id:'lePending',          l:'LE Pending',            c:'status',  d:'Date awaiting Loan Estimate'},
+  {id:'fileReceived',       l:'File Received',         c:'status',  d:'Date loan file received in processing'},
+  {id:'uwReceived',         l:'UW Received',           c:'status',  d:'Date file sent to underwriting'},
+  {id:'approvedDate',       l:'Approved',              c:'status',  d:'Date of initial approval decision'},
+  {id:'dateLocked',         l:'Date Locked',           c:'status',  d:'Date rate lock was established'},
+  {id:'conditionForReview', l:'Conditions for Review', c:'status',  d:'Date conditions sent to underwriter'},
+  {id:'changesToUW',        l:'Changes to UW',         c:'status',  d:'Date changes submitted to underwriter'},
+  {id:'ctcRequested',       l:'CTC Requested',         c:'status',  d:'Date Clear to Close was requested'},
+  {id:'clearToClose',       l:'Clear to Close',        c:'status',  d:'Date loan cleared to close'},
+  {id:'docsOut',            l:'Docs Out',              c:'status',  d:'Date closing docs sent to borrower'},
+  {id:'docsBack',           l:'Docs Back',             c:'status',  d:'Date closing docs returned'},
+  {id:'fundsOrdered',       l:'Funds Ordered',         c:'status',  d:'Date funds ordered'},
+  {id:'fundsSent',          l:'Funds Sent',            c:'status',  d:'Date funds transmitted to title'},
+  {id:'funded',             l:'Funded',                c:'status',  d:'Date loan was funded'},
+  {id:'withdrawalDate',     l:'Withdrawal',            c:'status',  d:'Date loan withdrawn from process'},
+  // TRID
+  {id:'applicationDate',             l:'Application Date',             c:'trid', d:'Triggers 3-day LE delivery rule'},
+  {id:'leDueDate',                   l:'LE Due Date',                  c:'trid', d:'Deadline for initial LE delivery'},
+  {id:'initialLeDeliveryDate',       l:'Initial LE Delivered',         c:'trid', d:'Date initial LE was sent', f:'c'},
+  {id:'verbalItpReceived',           l:'Verbal ITP Received',          c:'trid', d:'Verbal Intent to Proceed date'},
+  {id:'intentToProceed',             l:'Intent to Proceed',            c:'trid', d:'Formal Intent to Proceed received'},
+  {id:'lastLeReceivedDate',          l:'Last LE Received',             c:'trid', d:'Final LE acknowledged by borrower', f:'c'},
+  {id:'lastLeDeliveredDate',         l:'Last LE Delivered',            c:'trid', d:'Final LE sent to borrower', f:'c'},
+  {id:'cdRequestDate',               l:'CD Request Date',              c:'trid', d:'Initial Closing Disclosure requested'},
+  {id:'cdDeliveredDate',             l:'CD Delivered',                 c:'trid', d:'CD delivered to borrower', f:'c'},
+  {id:'cdReceivedDate',              l:'CD Received',                  c:'trid', d:'CD acknowledged by borrower', f:'c'},
+  {id:'earliestClosingDate',         l:'Earliest Closing Date',        c:'trid', d:'CD Delivered + 3 business days', f:'c'},
+  {id:'scheduledClosingDate',        l:'Scheduled Closing Date',       c:'trid', d:'Actual scheduled closing date'},
+  {id:'novSentToBorrower',           l:'NOV Sent to Borrower',         c:'trid', d:'Notice of Void sent'},
+  {id:'appraisalDeliveredToBorrower',l:'Appraisal Delivered to Borr.', c:'trid', d:'Appraisal delivered per timing rules'},
+  {id:'appraisalTimingWaiver',       l:'Appraisal Timing Waiver',      c:'trid', d:'Appraisal timing waiver granted'},
+  // Key Dates
+  {id:'originalApprovedDate',  l:'Original Approved Date',  c:'key', d:'Date of initial approval'},
+  {id:'loanApprovedDate',      l:'Loan Approved Date',      c:'key', d:'Date of final approval'},
+  {id:'lockExpiration',        l:'Lock Expiration',         c:'key', d:'Date rate lock expires'},
+  {id:'scheduledFundingDate',  l:'Scheduled Funding Date',  c:'key', d:'Target date for funding'},
+  {id:'disbursementDate',      l:'Disbursement Date',       c:'key', d:'Date funds disbursed'},
+  {id:'cdSentToTitle',         l:'CD Sent to Title',        c:'key', d:'Date CD sent to title company'},
+  {id:'cdApprovedByTitle',     l:'CD Approved by Title',    c:'key', d:'Date title approved the CD'},
+  {id:'initialCdAcknowledged', l:'Initial CD Acknowledged', c:'key', d:'Date initial CD acknowledged'},
+  {id:'initialLeAcknowledged', l:'Initial LE Acknowledged', c:'key', d:'Date initial LE acknowledged'},
+  {id:'leRequested',           l:'LE Requested',            c:'key', d:'Date LE requested from BytePro'},
+  {id:'noteDate',              l:'Note Date',               c:'key', d:'Promissory note date'},
+  {id:'firstPaymentDate',      l:'First Payment Date',      c:'key', d:'Date first mortgage payment due'},
+  {id:'statusChangedDate',     l:'Status Changed',          c:'key', d:'Date of last status change'},
+  // Rate Lock
+  {id:'lockRequestTime',   l:'Lock Requested',       c:'lock', d:'When rate lock was requested'},
+  {id:'lockStartDate',     l:'Lock Start Date',      c:'lock', d:'Date rate lock became effective'},
+  {id:'lockExpirationDate',l:'Lock Expiration Date', c:'lock', d:'Date rate lock expires'},
+  {id:'originalLockDate',  l:'Original Lock Date',   c:'lock', d:'Original lock date for refi'},
+  {id:'lockProcessedTime', l:'Lock Processed',       c:'lock', d:'When lock was processed by pricing'},
+  // Expiration
+  {id:'creditDocExpiration',       l:'Credit Doc Expiration',   c:'expiration', d:'Credit documents expire', f:'x'},
+  {id:'preApprovalExpirationDate', l:'Pre-Approval Expiration', c:'expiration', d:'Pre-approval letter expires', f:'x'},
+  {id:'appraisalExpirationDate',   l:'Appraisal Expiration',    c:'expiration', d:'Appraisal report expires', f:'x'},
+  {id:'assetDocExpirationDate',    l:'Asset Doc Expiration',    c:'expiration', d:'Asset docs expire', f:'x'},
+  {id:'incomeDocExpirationDate',   l:'Income Doc Expiration',   c:'expiration', d:'Income docs expire', f:'x'},
+  {id:'cplExpirationDate',         l:'CPL Expiration',          c:'expiration', d:'Closing Protection Letter expires', f:'x'},
+  {id:'titleDocExpirationDate',    l:'Title Doc Expiration',    c:'expiration', d:'Title docs expire', f:'x'},
+  {id:'verbalVoeExpiration',       l:'Verbal VOE Expiration',   c:'expiration', d:'Verbal VOE expires', f:'x'},
+  {id:'approvalExpires',           l:'Approval Expires',        c:'expiration', d:'Loan approval expires'},
+  // Contract
+  {id:'contractClosingDate',         l:'Contract Closing Date',  c:'contract', d:'Closing date per purchase contract'},
+  {id:'amendedContractClosingDate',  l:'Amended Contract Close', c:'contract', d:'Amended contract closing date'},
+  {id:'purchaseContractDate',        l:'Purchase Contract Date', c:'contract', d:'Date contract was signed'},
+  {id:'commitmentContingencyDate1',  l:'Contingency Date 1',    c:'contract', d:'First contingency deadline', f:'e'},
+  {id:'commitmentContingencyDate2',  l:'Contingency Date 2',    c:'contract', d:'Second contingency deadline', f:'e'},
+  {id:'commitmentContingencyDate3',  l:'Contingency Date 3',    c:'contract', d:'Third contingency deadline', f:'e'},
+  {id:'commitmentContingencyDateMet1',l:'Contingency 1 Met',    c:'contract', d:'Date first contingency met', f:'e'},
+  {id:'commitmentContingencyDateMet2',l:'Contingency 2 Met',    c:'contract', d:'Date second contingency met'},
+  {id:'commitmentDate',              l:'Commitment Date',       c:'contract', d:'Date of loan commitment'},
+  // Appraisal
+  {id:'appraisalOrderCreated',  l:'Appraisal Ordered',        c:'appraisal', d:'Date appraisal was ordered', f:'c'},
+  {id:'appraisalCompleted',     l:'Appraisal Completed',      c:'appraisal', d:'Date completed by appraiser'},
+  {id:'appraisalReceivedByCmg', l:'Appraisal Received by CMG',c:'appraisal', d:'Date received by CMG', f:'c'},
+  {id:'appraisalApprovedByUw',  l:'Appraisal Approved by UW', c:'appraisal', d:'Date UW approved appraisal'},
+  // Disclosure
+  {id:'disclosureDeadline',         l:'Disclosure Deadline',         c:'disclosure', d:'Deadline to deliver disclosures'},
+  {id:'selfDisclosureDeadline',     l:'Self-Disclosure Deadline',    c:'disclosure', d:'Self-disclosure deadline'},
+  {id:'initialDisclosuresRequested',l:'Initial Disclosures Requested',c:'disclosure', d:'Date initial disclosures requested'},
+  {id:'eConsentDate',               l:'eConsent Date',               c:'disclosure', d:'Date borrower gave eConsent'},
+  {id:'creditAuthDate',             l:'Credit Auth Date',            c:'disclosure', d:'Date credit auth was given'},
+  // Other
+  {id:'caseNoDate',           l:'Case Number Assigned',       c:'other', d:'FHA/VA case number assigned'},
+  {id:'miOrdered',            l:'MI Ordered',                 c:'other', d:'Mortgage insurance ordered'},
+  {id:'miReceived',           l:'MI Received',                c:'other', d:'MI commitment received'},
+  {id:'selectedForQc',        l:'Selected for QC',            c:'other', d:'Selected for quality control'},
+  {id:'qcCompleted',          l:'QC Completed',               c:'other', d:'QC review completed'},
+  {id:'declinedDate',         l:'Declined',                   c:'other', d:'Date loan declined'},
+  {id:'denialNoticeSent',     l:'Denial Notice Sent',         c:'other', d:'Denial notice sent to borrower'},
+  {id:'creditFirstIssuedDate',l:'Credit First Issued',        c:'other', d:'Date credit report pulled'},
+  {id:'prequalDate',          l:'Pre-Qualification Date',     c:'other', d:'Date borrower pre-qualified'},
+  {id:'processingHoldDate',   l:'Processing Hold',            c:'other', d:'Processing hold applied'},
+  {id:'processingHoldRelease',l:'Processing Hold Released',   c:'other', d:'Processing hold released'},
+  {id:'wireInstructionsConfirmed',l:'Wire Instructions Confirmed',c:'other', d:'Wire instructions confirmed'},
+  {id:'fastPassRequested',    l:'Fast Pass Requested',        c:'other', d:'Fast Pass requested'},
+  {id:'conditionsDiscussedWithBorrower',l:'Conditions Discussed',c:'other', d:'Conditions discussed with borrower'},
+];
+
+const LOAN = {loanNumber:'2026-CMG-004781',borrowers:'John & Jane Smith',property:'1847 Maple Ridge Dr, Denver, CO 80220',loanAmount:'$420,000',purchasePrice:'$525,000',loanType:'Conventional 30yr Fixed',rate:'6.375%',status:'Clear to Close',lo:'Kim Winters',processor:'Sarah Chen'};
+
+const DATES = {prospect:'2026-03-05',lePending:'2026-03-10',fileReceived:'2026-03-14',uwReceived:'2026-03-25',approvedDate:'2026-03-28',dateLocked:'2026-03-15',conditionForReview:'2026-03-30',changesToUW:'2026-04-01',ctcRequested:'2026-04-03',clearToClose:'2026-04-05',docsOut:'2026-04-10',docsBack:null,fundsOrdered:null,fundsSent:null,funded:null,withdrawalDate:null,applicationDate:'2026-03-10',leDueDate:'2026-03-13',initialLeDeliveryDate:'2026-03-11',verbalItpReceived:'2026-03-11',intentToProceed:'2026-03-12',lastLeReceivedDate:'2026-03-20',lastLeDeliveredDate:'2026-03-19',cdRequestDate:'2026-04-05',cdDeliveredDate:'2026-04-06',cdReceivedDate:'2026-04-07',earliestClosingDate:'2026-04-09',scheduledClosingDate:'2026-04-15',novSentToBorrower:null,appraisalDeliveredToBorrower:'2026-03-24',appraisalTimingWaiver:null,originalApprovedDate:'2026-03-28',loanApprovedDate:'2026-03-28',lockExpiration:'2026-04-29',scheduledFundingDate:'2026-04-15',disbursementDate:null,cdSentToTitle:'2026-04-06',cdApprovedByTitle:'2026-04-07',initialCdAcknowledged:'2026-04-07',initialLeAcknowledged:'2026-03-12',leRequested:'2026-03-10',noteDate:null,firstPaymentDate:'2026-06-01',statusChangedDate:'2026-04-10',lockRequestTime:'2026-03-15',lockStartDate:'2026-03-15',lockExpirationDate:'2026-04-29',originalLockDate:'2026-03-15',lockProcessedTime:'2026-03-15',creditDocExpiration:'2026-07-10',preApprovalExpirationDate:'2026-06-10',appraisalExpirationDate:'2026-09-22',assetDocExpirationDate:'2026-05-14',incomeDocExpirationDate:'2026-05-14',cplExpirationDate:'2026-06-30',titleDocExpirationDate:'2026-07-01',verbalVoeExpiration:'2026-04-22',approvalExpires:'2026-06-28',contractClosingDate:'2026-04-15',amendedContractClosingDate:null,purchaseContractDate:'2026-03-08',commitmentContingencyDate1:'2026-03-22',commitmentContingencyDate2:'2026-04-01',commitmentContingencyDate3:null,commitmentContingencyDateMet1:'2026-03-20',commitmentContingencyDateMet2:'2026-03-31',commitmentDate:'2026-03-28',appraisalOrderCreated:'2026-03-14',appraisalCompleted:'2026-03-22',appraisalReceivedByCmg:'2026-03-23',appraisalApprovedByUw:'2026-03-27',disclosureDeadline:'2026-03-13',selfDisclosureDeadline:'2026-03-20',initialDisclosuresRequested:'2026-03-10',eConsentDate:'2026-03-10',creditAuthDate:'2026-03-10',caseNoDate:null,miOrdered:'2026-03-14',miReceived:'2026-03-18',selectedForQc:null,qcCompleted:null,declinedDate:null,denialNoticeSent:null,creditFirstIssuedDate:'2026-03-10',prequalDate:'2026-03-05',processingHoldDate:null,processingHoldRelease:null,wireInstructionsConfirmed:null,fastPassRequested:null,conditionsDiscussedWithBorrower:'2026-03-31'};
+
+/* ═══════════════════════════════════════════════════════════
+   DEFAULT LAYOUT
+   ═══════════════════════════════════════════════════════════ */
+function mkDefault(){
+  return {
+    id:'default', name:'Default \u2014 LO Overview', isDefault:true,
+    groups:[
+      {id:'g-milestone', name:'Key Milestones', color:'#138890', ids:['applicationDate','intentToProceed','fileReceived','uwReceived','approvedDate','clearToClose','docsOut','docsBack','funded']},
+      {id:'g-trid',      name:'TRID Compliance',color:'#7c3aed', ids:['leDueDate','initialLeDeliveryDate','cdDeliveredDate','cdReceivedDate','earliestClosingDate','scheduledClosingDate']},
+      {id:'g-lock',      name:'Rate Lock',      color:'#d97706', ids:['dateLocked','lockStartDate','lockExpirationDate']},
+      {id:'g-appraisal', name:'Appraisal',      color:'#0d9488', ids:['appraisalOrderCreated','appraisalCompleted','appraisalReceivedByCmg','appraisalApprovedByUw']},
+      {id:'g-expiry',    name:'Expirations',     color:'#cb3a31', ids:['creditDocExpiration','appraisalExpirationDate','assetDocExpirationDate','incomeDocExpirationDate','approvalExpires']},
+      {id:'g-contract',  name:'Contract',        color:'#0891b2', ids:['purchaseContractDate','contractClosingDate','commitmentDate','firstPaymentDate']},
+    ]
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════ */
+const SK='clear-dash-layouts', AK='clear-dash-active';
+let layouts=[], activeId='default', editing=false, editGroups=[], collapsedG={}, collapsedI={}, ddOpen=false;
+let dragType=null, dragId=null, dragSourceGroup=null; // drag state
+
+function load(){
+  try{const r=localStorage.getItem(SK); layouts=r?JSON.parse(r):[mkDefault()]}catch{layouts=[mkDefault()]}
+  if(!layouts.find(l=>l.id==='default')) layouts.unshift(mkDefault());
+  activeId=localStorage.getItem(AK)||'default';
+}
+function persist(){localStorage.setItem(SK,JSON.stringify(layouts)); localStorage.setItem(AK,activeId)}
+function active(){return layouts.find(l=>l.id===activeId)||mkDefault()}
+function usedIds(){if(editing) return editGroups.flatMap(g=>g.ids); return active().groups.flatMap(g=>g.ids)}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════════════════════ */
+const TODAY=new Date(); TODAY.setHours(0,0,0,0);
+function pd(s){if(!s)return null;const d=new Date(s+'T00:00:00');return isNaN(d)?null:d}
+function fmt(s){const d=pd(s);return d?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'\u2014'}
+function dst(s,cat){const d=pd(s);if(!d)return'pending';if(cat==='expiration'&&d<TODAY)return'expired';if(d.toDateString()===TODAY.toDateString())return'today';return d<TODAY?'completed':'upcoming'}
+function stCol(st){return{completed:'#609e5b',today:'#138890',upcoming:'#d97706',expired:'#cb3a31',pending:'#ced4db'}[st]}
+function daysDiff(s){const d=pd(s);if(!d)return null;return Math.ceil((d-TODAY)/(864e5))}
+function gid(){return 'g-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDERING
+   ═══════════════════════════════════════════════════════════ */
+
+function renderLoanBar(){
+  const l=LOAN;
+  document.getElementById('loanBar').innerHTML=`<span class="loan-number">${l.loanNumber}</span><span class="loan-sep">|</span><span class="loan-detail"><strong>${l.borrowers}</strong></span><span class="loan-sep">|</span><span class="loan-detail">${l.property}</span><span class="loan-sep">|</span><span class="loan-detail">${l.loanAmount} ${l.loanType} @ ${l.rate}</span><span class="loan-sep">|</span><span class="loan-detail">LO: ${l.lo} &middot; Proc: ${l.processor}</span><span class="status-badge">${l.status}</span>`;
+}
+
+function renderControls(){
+  // Layout dropdown
+  const al=active(), ch=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
+  let dd='';
+  if(ddOpen){
+    dd='<div class="layout-dropdown">';
+    layouts.forEach(l=>{
+      const act=l.id===activeId?' active':'';
+      const del=l.isDefault?'':`<button class="del-btn" onclick="event.stopPropagation();deleteLayout('${l.id}')">&times;</button>`;
+      dd+=`<button class="layout-dropdown-item${act}" onclick="switchLayout('${l.id}')">${l.name}${del}</button>`;
+    });
+    dd+='<div class="layout-dropdown-divider"></div><button class="layout-dropdown-item new-layout" onclick="createLayout()">+ New Layout</button></div>';
+  }
+  document.getElementById('layoutSelect').innerHTML=`<button class="layout-btn${ddOpen?' open':''}" onclick="toggleDD()">${al.name} ${ch}</button>${dd}`;
+
+  // Right controls
+  document.getElementById('controlsRight').innerHTML = editing
+    ? ''
+    : `<button class="btn btn-primary" onclick="startEdit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Customize</button>`;
+}
+
+function renderStats(){
+  const groups=editing?editGroups:active().groups;
+  const ids=groups.flatMap(g=>g.ids);
+  let c=0,t=0,u=0,p=0,x=0;
+  ids.forEach(id=>{const f=DF.find(z=>z.id===id);if(!f)return;const s=dst(DATES[id],f.c);if(s==='completed')c++;else if(s==='today')t++;else if(s==='upcoming')u++;else if(s==='expired')x++;else p++});
+  document.getElementById('statsRow').innerHTML=`<div class="stat-chip"><span class="stat-dot dot-completed"></span>${c} Completed</div><div class="stat-chip"><span class="stat-dot dot-today"></span>${t} Today</div><div class="stat-chip"><span class="stat-dot dot-upcoming"></span>${u} Upcoming</div><div class="stat-chip"><span class="stat-dot dot-expired"></span>${x} Expired</div><div class="stat-chip"><span class="stat-dot dot-pending"></span>${p} Pending</div><div class="stat-chip" style="margin-left:auto;background:var(--cmg-primary-bg);color:var(--cmg-primary-dark);border-color:var(--cmg-primary-border)">${ids.length} of ${DF.length} dates shown</div>`;
+}
+
+function renderDateCard(f, groupId, borderColor){
+  const v=DATES[f.id], st=dst(v,f.c), col=stCol(st);
+  let badges='';
+  if(f.f==='c') badges+=`<span class="badge badge-computed">Computed</span>`;
+  if(f.f==='e') badges+=`<span class="badge badge-editable">Editable</span>`;
+  if(f.f==='x'&&v){
+    const dd=daysDiff(v), closing=DATES.scheduledClosingDate, cd=daysDiff(closing);
+    if(dd!==null){
+      const urgent=dd<30;
+      badges+=`<span class="badge badge-countdown${urgent?' urgent':''}">${dd}d to exp</span>`;
+    }
+  }
+  const rm=editing?`<button class="date-card-remove" onclick="event.stopPropagation();removeDate('${groupId}','${f.id}')" title="Remove">&times;</button>`:'';
+  return `<div class="date-card" style="border-left-color:${borderColor}" title="${f.d}" draggable="${editing}" ondragstart="onDateDragStart(event,'${f.id}','${groupId}')" ondragend="onDragEnd(event)"><div class="date-card-top"><div class="date-card-label">${f.l}</div>${rm}</div><div class="date-card-value ${st}"><span class="date-status-dot" style="background:${col}"></span>${fmt(v)}</div>${badges?`<div class="date-card-badges">${badges}</div>`:''}</div>`;
+}
+
+function renderGroups(){
+  const groups=editing?editGroups:active().groups;
+  const el=document.getElementById('mainArea');
+  if(!groups.length){
+    el.innerHTML=`<div class="empty-state"><h3>No groups yet</h3><p>${editing?'Click "+ Add Group" below to get started.':'Click "Customize" to build your layout.'}</p></div>${editing?'<button class="add-group-btn" onclick="addGroup()">+ Add Group</button>':''}`;
+    return;
+  }
+  let html='';
+  groups.forEach((g,i)=>{
+    const fields=g.ids.map(id=>DF.find(f=>f.id===id)).filter(Boolean);
+    const col=collapsedG[g.id];
+    const grip=`<div class="group-drag-handle" title="Drag to reorder">&#x2630;</div>`;
+    const nameEl=editing?`<input class="group-name" value="${g.name}" onchange="renameGroup('${g.id}',this.value)" onclick="event.stopPropagation()">`:`<span class="group-name">${g.name}</span>`;
+    const actions=`<div class="group-actions"><div class="color-dots">${GROUP_COLORS.map(gc=>`<span class="color-dot${gc===g.color?' active':''}" style="background:${gc}" onclick="event.stopPropagation();setGroupColor('${g.id}','${gc}')"></span>`).join('')}</div><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteGroup('${g.id}')">Delete</button></div>`;
+
+    // Drop zone before group (for reorder)
+    html+=`<div class="drop-zone" data-position="${i}" ondragover="onGroupZoneDragOver(event)" ondragleave="onGroupZoneDragLeave(event)" ondrop="onGroupZoneDrop(event,${i})"></div>`;
+
+    html+=`<div class="group-panel" id="gp-${g.id}" draggable="${editing}" ondragstart="onGroupDragStart(event,'${g.id}')" ondragend="onDragEnd(event)">`;
+    html+=`<div class="group-header" onclick="toggleGroup('${g.id}')">${grip}<span class="group-color-bar" style="background:${g.color}"></span>${nameEl}<span class="group-count">${fields.length}</span>${actions}<svg class="group-chevron${col?' collapsed':''}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>`;
+
+    if(!col){
+      html+=`<div class="group-content${fields.length===0&&editing?' empty-target':''}" id="gc-${g.id}" ondragover="onGroupContentDragOver(event,'${g.id}')" ondragleave="onGroupContentDragLeave(event)" ondrop="onGroupContentDrop(event,'${g.id}')">`;
+      if(fields.length===0&&editing){
+        html+=`Drop dates here`;
+      } else {
+        html+=`<div class="date-grid">${fields.map(f=>renderDateCard(f,g.id,g.color)).join('')}</div>`;
+      }
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+  });
+  // Final drop zone
+  html+=`<div class="drop-zone" data-position="${groups.length}" ondragover="onGroupZoneDragOver(event)" ondragleave="onGroupZoneDragLeave(event)" ondrop="onGroupZoneDrop(event,${groups.length})"></div>`;
+  html+=`<button class="add-group-btn" onclick="addGroup()">+ Add Group</button>`;
+  if(editing) el.classList.add('editing'); else el.classList.remove('editing');
+  el.innerHTML=html;
+}
+
+function renderInventory(){
+  const q=(document.getElementById('invSearch')?.value||'').toLowerCase();
+  const used=new Set(usedIds());
+  let html='';
+  CATS.forEach(cat=>{
+    const fields=DF.filter(f=>f.c===cat.id);
+    const filtered=q?fields.filter(f=>f.l.toLowerCase().includes(q)||f.d.toLowerCase().includes(q)):fields;
+    if(!filtered.length)return;
+    const col=collapsedI[cat.id];
+    html+=`<div class="inv-cat"><div class="inv-cat-header" onclick="toggleInvCat('${cat.id}')"><div class="inv-cat-label"><span class="group-color-bar" style="background:${cat.color}"></span>${cat.label} (${filtered.length})</div><svg class="inv-cat-chevron${col?' collapsed':''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>`;
+    if(!col){
+      html+=`<div class="inv-cat-content">`;
+      filtered.forEach(f=>{
+        const isUsed=used.has(f.id);
+        html+=`<div class="inv-date${isUsed?' used':''}" draggable="${!isUsed}" ondragstart="onInvDragStart(event,'${f.id}')" ondragend="onDragEnd(event)"><span class="grip">&#x2630;</span>${f.l}</div>`;
+      });
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+  });
+  document.getElementById('invBody').innerHTML=html;
+}
+
+function renderAll(){renderLoanBar();renderControls();renderStats();renderGroups();if(editing)renderInventory()}
+
+/* ═══════════════════════════════════════════════════════════
+   DRAG & DROP
+   ═══════════════════════════════════════════════════════════ */
+
+// Date drag from inventory
+function onInvDragStart(e,dateId){
+  dragType='date'; dragId=dateId; dragSourceGroup=null;
+  e.dataTransfer.effectAllowed='copy';
+  e.dataTransfer.setData('text/plain',dateId);
+  e.target.style.opacity='.4';
+}
+
+// Date drag from a group (to move between groups)
+function onDateDragStart(e,dateId,groupId){
+  if(!editing){e.preventDefault();return}
+  dragType='date'; dragId=dateId; dragSourceGroup=groupId;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',dateId);
+  e.target.classList.add('dragging');
+  e.stopPropagation(); // don't trigger group drag
+}
+
+// Group drag
+function onGroupDragStart(e,groupId){
+  if(!editing){e.preventDefault();return}
+  dragType='group'; dragId=groupId; dragSourceGroup=null;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',groupId);
+  setTimeout(()=>{const el=document.getElementById('gp-'+groupId);if(el)el.classList.add('dragging')},0);
+}
+
+function onDragEnd(e){
+  e.target.style.opacity='';e.target.classList.remove('dragging');
+  document.querySelectorAll('.dragging,.drag-over-group,.drag-target,.active').forEach(el=>{el.classList.remove('dragging','drag-over-group','drag-target','active')});
+  dragType=null;dragId=null;dragSourceGroup=null;
+}
+
+// Drop date onto group content
+function onGroupContentDragOver(e,groupId){
+  if(dragType!=='date'){return}
+  e.preventDefault();e.dataTransfer.dropEffect=dragSourceGroup?'move':'copy';
+  const el=document.getElementById('gc-'+groupId);if(el)el.classList.add('drag-target');
+}
+function onGroupContentDragLeave(e){
+  const el=e.currentTarget;if(el)el.classList.remove('drag-target');
+}
+function onGroupContentDrop(e,groupId){
+  e.preventDefault();
+  const el=document.getElementById('gc-'+groupId);if(el)el.classList.remove('drag-target');
+  if(dragType!=='date'||!dragId)return;
+  const g=editGroups.find(x=>x.id===groupId);if(!g)return;
+  // Remove from source group if moving
+  if(dragSourceGroup&&dragSourceGroup!==groupId){
+    const sg=editGroups.find(x=>x.id===dragSourceGroup);
+    if(sg) sg.ids=sg.ids.filter(id=>id!==dragId);
+  }
+  // Add to target if not already there
+  if(!g.ids.includes(dragId)) g.ids.push(dragId);
+  renderGroups();renderInventory();renderStats();
+}
+
+// Group reorder drop zones
+function onGroupZoneDragOver(e){
+  if(dragType!=='group')return;
+  e.preventDefault();e.dataTransfer.dropEffect='move';
+  e.currentTarget.classList.add('active');
+}
+function onGroupZoneDragLeave(e){e.currentTarget.classList.remove('active')}
+function onGroupZoneDrop(e,position){
+  e.preventDefault();e.currentTarget.classList.remove('active');
+  if(dragType!=='group'||!dragId)return;
+  const idx=editGroups.findIndex(g=>g.id===dragId);
+  if(idx<0)return;
+  const [moved]=editGroups.splice(idx,1);
+  const insertAt=position>idx?position-1:position;
+  editGroups.splice(insertAt,0,moved);
+  renderGroups();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EDIT MODE
+   ═══════════════════════════════════════════════════════════ */
+
+function startEdit(){
+  editing=true;
+  editGroups=JSON.parse(JSON.stringify(active().groups));
+  document.getElementById('modeBanner').classList.add('visible');
+  document.getElementById('mainArea').classList.add('with-inventory','editing');
+  document.getElementById('inventory').classList.add('open');
+  renderAll();
+}
+
+function cancelEdit(){
+  editing=false;
+  document.getElementById('modeBanner').classList.remove('visible');
+  document.getElementById('mainArea').classList.remove('with-inventory','editing');
+  document.getElementById('inventory').classList.remove('open');
+  renderAll();
+}
+
+function saveEdit(){
+  const al=layouts.find(l=>l.id===activeId);
+  if(al){al.groups=JSON.parse(JSON.stringify(editGroups));persist()}
+  cancelEdit();
+}
+
+function closeInventory(){cancelEdit()}
+
+/* ═══════════════════════════════════════════════════════════
+   GROUP MANAGEMENT
+   ═══════════════════════════════════════════════════════════ */
+
+function addGroup(){
+  const name=prompt('Group name:','My Dates');
+  if(!name)return;
+  const color=GROUP_COLORS[editGroups.length%GROUP_COLORS.length];
+  editGroups.push({id:gid(),name,color,ids:[]});
+  renderGroups();renderInventory();
+}
+
+function renameGroup(id,name){const g=editGroups.find(x=>x.id===id);if(g)g.name=name}
+
+function setGroupColor(id,color){
+  const g=editGroups.find(x=>x.id===id);if(g){g.color=color;renderGroups()}
+}
+
+function deleteGroup(id){
+  if(!confirm('Delete this group? Dates will return to inventory.'))return;
+  editGroups=editGroups.filter(g=>g.id!==id);
+  renderGroups();renderInventory();renderStats();
+}
+
+function removeDate(groupId,dateId){
+  const g=editGroups.find(x=>x.id===groupId);
+  if(g){g.ids=g.ids.filter(id=>id!==dateId);renderGroups();renderInventory();renderStats()}
+}
+
+function toggleGroup(id){collapsedG[id]=!collapsedG[id];renderGroups()}
+function toggleInvCat(id){collapsedI[id]=!collapsedI[id];renderInventory()}
+
+/* ═══════════════════════════════════════════════════════════
+   LAYOUT MANAGEMENT
+   ═══════════════════════════════════════════════════════════ */
+
+function toggleDD(){ddOpen=!ddOpen;renderControls()}
+function switchLayout(id){activeId=id;ddOpen=false;persist();renderAll()}
+function deleteLayout(id){if(!confirm('Delete this layout?'))return;layouts=layouts.filter(l=>l.id!==id);if(activeId===id)activeId='default';ddOpen=false;persist();renderAll()}
+function createLayout(){
+  const name=prompt('Layout name:','My Custom Layout');if(!name)return;
+  const id='lay-'+Date.now();
+  layouts.push({id,name,isDefault:false,groups:[{id:gid(),name:'My Dates',color:'#138890',ids:[...mkDefault().groups[0].ids]}]});
+  activeId=id;ddOpen=false;persist();renderAll();startEdit();
+}
+
+// Close dropdown on outside click
+document.addEventListener('click',e=>{if(ddOpen&&!e.target.closest('.layout-select')){ddOpen=false;renderControls()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(editing)cancelEdit();ddOpen=false;renderControls()}});
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════ */
+load();
+renderAll();
+</script>
+</body>
+</html>
