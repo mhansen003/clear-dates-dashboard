@@ -162,6 +162,12 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
 .date-receiving .group-content.drag-target{background:rgba(19,136,144,.06);box-shadow:inset 0 0 16px rgba(19,136,144,.06)}
 .date-receiving .group-content.empty-target{border-color:var(--cmg-primary);background:rgba(19,136,144,.08)}
 
+/* ── Drag: Date reorder indicators ───────────────────── */
+.editing .date-card.drop-before{box-shadow:0 -2.5px 0 0 var(--cmg-primary)!important;z-index:2;position:relative}
+.editing .date-card.drop-after{box-shadow:0 2.5px 0 0 var(--cmg-primary)!important;z-index:2;position:relative}
+.condensed.editing .date-card.drop-before{box-shadow:inset 0 2.5px 0 0 var(--cmg-primary)!important}
+.condensed.editing .date-card.drop-after{box-shadow:inset 0 -2.5px 0 0 var(--cmg-primary)!important}
+
 /* ── Drag: Inventory item pickup ─────────────────────── */
 .inv-date-dragging{background:var(--cmg-primary-bg)!important;box-shadow:0 2px 8px rgba(0,0,0,.1);border-radius:4px}
 
@@ -663,7 +669,7 @@ function renderDateCard(f, groupId, borderColor){
     }
   }
   const rm=editing?`<button class="date-card-remove" onclick="event.stopPropagation();removeDate('${groupId}','${f.id}')" title="Remove">&times;</button>`:'';
-  return `<div class="date-card" style="border-left-color:${borderColor}" onclick="openDateModal('${f.id}')" onmouseenter="showTooltip(event,'${f.id}')" onmouseleave="hideTooltip()" draggable="${editing}" ondragstart="onDateDragStart(event,'${f.id}','${groupId}')" ondragend="onDragEnd(event)"><div class="date-card-top"><div class="date-card-label">${f.l}</div>${rm}</div><div class="date-card-value ${st}"><span class="date-status-dot" style="background:${col}"></span>${fmt(v)}</div>${badges?`<div class="date-card-badges">${badges}</div>`:''}</div>`;
+  return `<div class="date-card" style="border-left-color:${borderColor}" onclick="openDateModal('${f.id}')" onmouseenter="showTooltip(event,'${f.id}')" onmouseleave="hideTooltip()" draggable="${editing}" ondragstart="onDateDragStart(event,'${f.id}','${groupId}')" ondragend="onDragEnd(event)" ondragover="onDateCardDragOver(event,'${f.id}','${groupId}')" ondragleave="onDateCardDragLeave(event)" ondrop="onDateCardDrop(event,'${f.id}','${groupId}')"><div class="date-card-top"><div class="date-card-label">${f.l}</div>${rm}</div><div class="date-card-value ${st}"><span class="date-status-dot" style="background:${col}"></span>${fmt(v)}</div>${badges?`<div class="date-card-badges">${badges}</div>`:''}</div>`;
 }
 
 function renderGroups(){
@@ -792,7 +798,7 @@ function onInvDragStartVisual(){
 
 function onDragEnd(e){
   e.target.style.opacity='';e.target.classList.remove('dragging');
-  document.querySelectorAll('.dragging,.drag-over-group,.drag-target,.active,.dz-hover,.date-target').forEach(el=>{el.classList.remove('dragging','drag-over-group','drag-target','active','dz-hover','date-target')});
+  document.querySelectorAll('.dragging,.drag-over-group,.drag-target,.active,.dz-hover,.date-target,.drop-before,.drop-after').forEach(el=>{el.classList.remove('dragging','drag-over-group','drag-target','active','dz-hover','date-target','drop-before','drop-after')});
   const grid=document.getElementById('groupsGrid');
   if(grid){grid.classList.remove('group-dragging','date-receiving')}
   dragType=null;dragId=null;dragSourceGroup=null;
@@ -839,8 +845,48 @@ function onGroupContentDrop(e,groupId){
     const sg=editGroups.find(x=>x.id===dragSourceGroup);
     if(sg) sg.ids=sg.ids.filter(id=>id!==dragId);
   }
-  // Add to target if not already there
-  if(!g.ids.includes(dragId)) g.ids.push(dragId);
+  // Remove from current position if same group (reorder to end)
+  if(g.ids.includes(dragId)) g.ids=g.ids.filter(id=>id!==dragId);
+  g.ids.push(dragId);
+  renderGroups();renderInventory();renderStats();
+}
+
+// Date card reorder — drag over individual cards for precise placement
+function onDateCardDragOver(e,dateId,groupId){
+  if(dragType!=='date'||dragId===dateId)return;
+  e.preventDefault();e.stopPropagation();
+  e.dataTransfer.dropEffect=dragSourceGroup?'move':'copy';
+  // Clear previous indicators
+  document.querySelectorAll('.drop-before,.drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));
+  // Top half = before, bottom half = after
+  const rect=e.currentTarget.getBoundingClientRect();
+  const before=e.clientY<rect.top+rect.height/2;
+  e.currentTarget.classList.add(before?'drop-before':'drop-after');
+  // Keep group-level highlight
+  const gc=document.getElementById('gc-'+groupId);if(gc)gc.classList.add('drag-target');
+}
+function onDateCardDragLeave(e){
+  e.currentTarget.classList.remove('drop-before','drop-after');
+}
+function onDateCardDrop(e,targetDateId,groupId){
+  e.preventDefault();e.stopPropagation();
+  const rect=e.currentTarget.getBoundingClientRect();
+  const before=e.clientY<rect.top+rect.height/2;
+  // Clean up
+  document.querySelectorAll('.drop-before,.drop-after,.drag-target').forEach(el=>el.classList.remove('drop-before','drop-after','drag-target'));
+  if(dragType!=='date'||!dragId||dragId===targetDateId)return;
+  const g=editGroups.find(x=>x.id===groupId);if(!g)return;
+  // Remove from source group if cross-group move
+  if(dragSourceGroup&&dragSourceGroup!==groupId){
+    const sg=editGroups.find(x=>x.id===dragSourceGroup);
+    if(sg) sg.ids=sg.ids.filter(id=>id!==dragId);
+  }
+  // Remove from current position in this group (for reorder)
+  if(g.ids.includes(dragId)) g.ids=g.ids.filter(id=>id!==dragId);
+  // Insert at target position
+  let idx=g.ids.indexOf(targetDateId);
+  if(idx<0)idx=g.ids.length;
+  g.ids.splice(before?idx:idx+1,0,dragId);
   renderGroups();renderInventory();renderStats();
 }
 
