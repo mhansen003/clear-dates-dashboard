@@ -82,8 +82,14 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
 .layout-dropdown-divider{height:1px;background:var(--cmg-border-light);margin:2px 0}
 .layout-dropdown-item.new-layout{color:var(--cmg-primary);font-weight:600}
 
+/* ── Groups Grid ───────────────────────────────────────── */
+.groups-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+@media(max-width:900px){.groups-grid{grid-template-columns:1fr}}
+
 /* ── Group Panels ──────────────────────────────────────── */
-.group-panel{margin-bottom:12px;border-radius:var(--cmg-radius);box-shadow:var(--cmg-shadow);overflow:hidden;transition:box-shadow .2s,outline .2s;outline:2px solid transparent}
+.group-panel{border-radius:var(--cmg-radius);box-shadow:var(--cmg-shadow);overflow:hidden;transition:box-shadow .2s,outline .2s;outline:2px solid transparent;grid-column:span 1}
+.group-panel.span-2{grid-column:span 2}
+@media(max-width:900px){.group-panel.span-2{grid-column:span 1}}
 .group-panel.drag-over-group{outline:2px solid var(--cmg-primary-light);box-shadow:var(--cmg-shadow-md)}
 .group-panel.dragging{opacity:.4}
 .group-header{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--cmg-panel-header);user-select:none;min-height:36px}
@@ -110,8 +116,9 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
 
 /* ── Date Cards ────────────────────────────────────────── */
 .date-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:8px}
-.date-card{padding:10px 12px;border:1px solid var(--cmg-border-light);border-radius:4px;border-left:3px solid transparent;transition:box-shadow .15s,opacity .2s;position:relative}
-.date-card:hover{box-shadow:var(--cmg-shadow)}
+.date-card{padding:10px 12px;border:1px solid var(--cmg-border-light);border-radius:4px;border-left:3px solid transparent;transition:box-shadow .15s,opacity .2s,transform .2s;position:relative;cursor:pointer}
+.date-card:hover{box-shadow:var(--cmg-shadow-md);transform:translateY(-2px)}
+.editing .date-card:hover{box-shadow:var(--cmg-shadow);transform:none}
 .date-card.dragging{opacity:.3}
 .date-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:4px}
 .date-card-label{font-size:11px;font-weight:600;color:var(--cmg-text-label);margin-bottom:2px;line-height:1.3}
@@ -130,8 +137,55 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
 .badge-countdown.urgent{background:var(--cmg-red-bg);color:var(--cmg-red)}
 .editing .date-card{cursor:grab} .editing .date-card:active{cursor:grabbing}
 
+/* ── Drag: Group Drop Zones ──────────────────────────── */
+.group-drop-row{grid-column:1/-1;display:none;grid-template-columns:1fr 1fr;gap:10px;padding:2px 0}
+.group-dragging .group-drop-row{display:grid}
+.group-drop-target{height:56px;border:2.5px dashed rgba(19,136,144,.3);border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:default;transition:all .2s ease;position:relative;overflow:hidden}
+.group-drop-target::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(19,136,144,.04) 0%,transparent 70%);opacity:0;transition:opacity .25s}
+.group-drop-target.dz-hover{border-color:var(--cmg-primary);border-style:solid;box-shadow:0 0 24px rgba(19,136,144,.18),inset 0 0 24px rgba(19,136,144,.04);transform:scale(1.01)}
+.group-drop-target.dz-hover::before{opacity:1}
+.group-drop-target .dz-icon{color:rgba(19,136,144,.4);transition:color .2s}
+.group-drop-target.dz-hover .dz-icon{color:var(--cmg-primary)}
+.group-drop-target .dz-label{font-size:11px;font-weight:700;color:rgba(19,136,144,.4);transition:color .2s;letter-spacing:.03em}
+.group-drop-target.dz-hover .dz-label{color:var(--cmg-primary)}
+.group-drop-target .dz-sub{font-size:9px;color:rgba(19,136,144,.3);transition:color .2s}
+.group-drop-target.dz-hover .dz-sub{color:rgba(19,136,144,.6)}
+
+/* ── Drag: Group states during drag ──────────────────── */
+.group-dragging .group-panel{opacity:.45;transform:scale(.985);transition:opacity .25s,transform .25s}
+.group-dragging .group-panel.dragging{opacity:.12;transform:scale(.97)}
+.group-dragging .group-panel.drag-over-group{opacity:.7;outline:2px solid var(--cmg-primary-light);transform:scale(1)}
+
+/* ── Drag: Date receiving states ─────────────────────── */
+.date-receiving .group-panel{outline:2px dashed rgba(19,136,144,.25);outline-offset:2px;transition:outline-color .2s,box-shadow .2s}
+.date-receiving .group-panel.date-target{outline-color:var(--cmg-primary);outline-style:solid;box-shadow:0 0 20px rgba(19,136,144,.12)}
+.date-receiving .group-content.drag-target{background:rgba(19,136,144,.06);box-shadow:inset 0 0 16px rgba(19,136,144,.06)}
+.date-receiving .group-content.empty-target{border-color:var(--cmg-primary);background:rgba(19,136,144,.08)}
+
+/* ── Drag: Inventory item pickup ─────────────────────── */
+.inv-date-dragging{background:var(--cmg-primary-bg)!important;box-shadow:0 2px 8px rgba(0,0,0,.1);border-radius:4px}
+
+/* ── Condensed View ───────────────────────────────────── */
+.condensed .date-grid{display:flex;flex-direction:column;gap:0}
+.condensed .date-card{padding:5px 10px;border-radius:0;border-left:3px solid transparent;border-bottom:1px solid var(--cmg-border-light);display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+.condensed .date-card:first-child{border-top-left-radius:4px;border-top-right-radius:4px}
+.condensed .date-card:last-child{border-bottom-left-radius:4px;border-bottom-right-radius:4px;border-bottom:none}
+.condensed .date-card-top{flex:0 0 auto;width:180px;min-width:0}
+.condensed .date-card-label{margin-bottom:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.condensed .date-card-value{font-size:12px;flex:0 0 auto;min-width:110px}
+.condensed .date-card-badges{margin-top:0;flex:1;justify-content:flex-end}
+.condensed .date-card-remove{display:none}
+.condensed.editing .date-card-remove{display:block;order:99}
+.condensed .group-content{padding:8px 10px}
+/* ── View Toggle ──────────────────────────────────────── */
+.view-toggle{display:inline-flex;border:1px solid var(--cmg-border);border-radius:var(--cmg-radius);overflow:hidden}
+.view-toggle button{background:var(--cmg-surface);border:none;padding:5px 10px;cursor:pointer;color:var(--cmg-text-muted);font-family:inherit;font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px;transition:background .15s,color .15s}
+.view-toggle button:not(:last-child){border-right:1px solid var(--cmg-border)}
+.view-toggle button.active{background:var(--cmg-primary-bg);color:var(--cmg-primary-dark)}
+.view-toggle button:hover:not(.active){background:var(--cmg-bg)}
+
 /* ── Inventory Panel ───────────────────────────────────── */
-.inventory{position:fixed;top:0;right:0;width:360px;height:100vh;background:var(--cmg-surface);border-left:1px solid var(--cmg-border);box-shadow:-4px 0 20px rgba(0,0,0,.08);z-index:90;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s ease}
+.inventory{position:fixed;top:0;right:0;width:360px;height:calc(100vh - 52px);background:var(--cmg-surface);border-left:1px solid var(--cmg-border);box-shadow:-4px 0 20px rgba(0,0,0,.08);z-index:90;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s ease}
 .inventory.open{transform:translateX(0)}
 .inventory-header{padding:12px 16px;background:var(--cmg-primary);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .inventory-header h3{font-size:14px;font-weight:700}
@@ -156,13 +210,25 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
 .add-group-btn:hover{border-color:var(--cmg-primary);background:var(--cmg-primary-bg)}
 .editing .add-group-btn{display:block}
 
-/* ── Footer Save Bar ───────────────────────────────────── */
-.save-bar{position:fixed;bottom:0;left:0;right:0;z-index:95;background:var(--cmg-surface);border-top:1px solid var(--cmg-border);padding:10px 20px;display:none;align-items:center;justify-content:space-between;box-shadow:0 -2px 10px rgba(0,0,0,.08)}
+/* ── Edit Footer Bar ───────────────────────────────────── */
+.edit-footer{position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--cmg-primary-dark);padding:12px 20px;display:none;align-items:center;justify-content:space-between;box-shadow:0 -4px 16px rgba(0,0,0,.25)}
+.edit-footer.visible{display:flex}
+.edit-footer-hint{color:rgba(255,255,255,.8);font-size:12px}
+.edit-footer-actions{display:flex;align-items:center;gap:8px}
+.edit-footer .btn-save{background:#fff;color:var(--cmg-primary-dark);font-weight:700;padding:8px 20px;font-size:13px}
+.edit-footer .btn-save:hover{background:var(--cmg-primary-bg)}
+.edit-footer .btn-cancel{background:rgba(255,255,255,.15);color:#fff;padding:8px 16px}
+.edit-footer .btn-cancel:hover{background:rgba(255,255,255,.25)}
+.edit-footer .btn-save-as{background:rgba(255,255,255,.1);color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.3);padding:8px 14px}
+.edit-footer .btn-save-as:hover{background:rgba(255,255,255,.2)}
+/* ── Save-As Bar ──────────────────────────────────────── */
+.save-bar{position:fixed;bottom:0;left:0;right:0;z-index:96;background:var(--cmg-surface);border-top:1px solid var(--cmg-border);padding:10px 20px;display:none;align-items:center;justify-content:space-between;box-shadow:0 -2px 10px rgba(0,0,0,.08)}
 .save-bar.visible{display:flex}
 .save-bar-left{display:flex;align-items:center;gap:10px}
 .save-bar-right{display:flex;align-items:center;gap:8px}
 .save-name-input{padding:6px 10px;border:1px solid var(--cmg-border);border-radius:var(--cmg-radius);font-family:inherit;font-size:12px;width:200px;outline:none}
 .save-name-input:focus{border-color:var(--cmg-primary-light)}
+@media(max-width:768px){.edit-footer{right:0}}
 
 /* ── Empty ─────────────────────────────────────────────── */
 .empty-state{text-align:center;padding:60px 20px;color:var(--cmg-text-muted)}
@@ -177,6 +243,42 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
 .color-dots{display:flex;gap:4px}
 .color-dot{width:16px;height:16px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:border-color .15s}
 .color-dot:hover,.color-dot.active{border-color:var(--cmg-text)}
+
+/* ── Date Tooltip ─────────────────────────────────────────── */
+.date-tooltip{position:fixed;z-index:600;pointer-events:none;opacity:0;transform:translate(-50%,-100%) translateY(6px);transition:opacity .18s,transform .18s cubic-bezier(.16,1,.3,1)}
+.date-tooltip.visible{opacity:1;transform:translate(-50%,-100%) translateY(0)}
+.date-tooltip.below{transform:translate(-50%,0) translateY(-6px)}
+.date-tooltip.below.visible{transform:translate(-50%,0) translateY(0)}
+.date-tooltip-inner{background:linear-gradient(135deg,#1e293b,#0f172a);color:#f1f5f9;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;box-shadow:0 8px 32px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.date-tooltip-arrow{position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:7px solid #1e293b}
+.date-tooltip.below .date-tooltip-arrow{top:-6px;bottom:auto;border-top:none;border-bottom:7px solid #1e293b}
+.tooltip-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px}
+
+/* ── Date Detail Modal ────────────────────────────────────── */
+.date-modal-backdrop{position:fixed;inset:0;z-index:500;background:rgba(15,23,42,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;perspective:1200px}
+.date-modal-backdrop.open{opacity:1;pointer-events:auto}
+.date-modal{background:var(--cmg-surface);border-radius:16px;box-shadow:0 25px 80px rgba(0,0,0,.25),0 0 0 1px rgba(0,0,0,.06);width:460px;max-width:92vw;overflow:hidden;position:relative;transform:rotateY(90deg) scale(.85);opacity:0;transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .3s}
+.date-modal-backdrop.open .date-modal{transform:rotateY(0) scale(1);opacity:1}
+.dm-accent{height:4px;width:100%}
+.dm-header{padding:24px 28px 20px;display:flex;align-items:flex-start;gap:20px;position:relative}
+.dm-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--cmg-text-muted);cursor:pointer;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;transition:all .2s}
+.dm-close:hover{background:var(--cmg-bg);color:var(--cmg-text);transform:rotate(90deg)}
+.dm-calendar{width:80px;flex-shrink:0;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1);border:1px solid var(--cmg-border-light)}
+.dm-cal-month{padding:5px;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#fff}
+.dm-cal-day{text-align:center;font-size:34px;font-weight:800;color:var(--cmg-text-dark);line-height:1;padding:8px 0 2px;background:var(--cmg-surface)}
+.dm-cal-year{text-align:center;font-size:11px;font-weight:600;color:var(--cmg-text-muted);padding-bottom:8px;background:var(--cmg-surface)}
+.dm-calendar-empty .dm-cal-day{color:var(--cmg-border);font-size:28px}
+.dm-info{flex:1;min-width:0;padding-top:2px}
+.dm-label{font-size:19px;font-weight:800;color:var(--cmg-text-dark);line-height:1.2;margin-bottom:6px}
+.dm-formatted-date{font-size:13px;font-weight:600;color:var(--cmg-text-label);margin-bottom:10px}
+.dm-relative{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700}
+.dm-divider{height:1px;background:var(--cmg-border-light);margin:0 28px}
+.dm-body{padding:20px 28px 24px}
+.dm-description{font-size:13.5px;line-height:1.7;color:var(--cmg-text);margin-bottom:16px;padding:14px 16px;background:var(--cmg-bg-alt);border-radius:10px;border-left:3px solid var(--cmg-border)}
+.dm-meta{display:flex;gap:8px;flex-wrap:wrap}
+.dm-cat-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;background:var(--cmg-bg);color:var(--cmg-text-label);border:1px solid var(--cmg-border-light)}
+.dm-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700}
+@media print{.date-tooltip,.date-modal-backdrop{display:none!important}}
 </style>
 </head>
 <body>
@@ -209,8 +311,9 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
 <div class="mode-banner" id="modeBanner">
   <span>Editing Layout &mdash; <span class="hint">Drag dates from the inventory into your groups. Drag groups to reorder.</span></span>
   <div style="display:flex;gap:8px">
-    <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff" onclick="cancelEdit()">Cancel</button>
-    <button class="btn btn-sm" style="background:#fff;color:var(--cmg-primary-dark)" onclick="saveEdit()">Save Layout</button>
+    <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;padding:6px 16px" onclick="cancelEdit()">Cancel</button>
+    <button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:6px 14px" onclick="openSaveAs()">Save As New...</button>
+    <button class="btn" style="background:#fff;color:var(--cmg-primary-dark);padding:6px 20px;font-size:13px" onclick="saveEdit()">Save Layout</button>
   </div>
 </div>
 
@@ -225,6 +328,20 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
   <div class="inventory-header"><h3>Date Inventory</h3><button class="inventory-close" onclick="closeInventory()">&times;</button></div>
   <div class="inventory-search"><input type="text" id="invSearch" placeholder="Search dates..." oninput="renderInventory()"></div>
   <div class="inventory-body" id="invBody"></div>
+  <div style="padding:10px 16px;border-top:1px solid var(--cmg-border-light);background:var(--cmg-bg-alt);display:flex;gap:8px;flex-shrink:0">
+    <button class="btn btn-ghost" style="flex:1" onclick="cancelEdit()">Cancel</button>
+    <button class="btn btn-primary" style="flex:1" onclick="saveEdit()">Save Layout</button>
+  </div>
+</div>
+
+<!-- Edit Mode Footer -->
+<div class="edit-footer" id="editFooter">
+  <div class="edit-footer-hint">Drag dates from the inventory into groups &middot; Drag groups to reorder &middot; Press Escape to cancel</div>
+  <div class="edit-footer-actions">
+    <button class="btn btn-cancel" onclick="cancelEdit()">Cancel</button>
+    <button class="btn btn-save-as" onclick="openSaveAs()">Save As New...</button>
+    <button class="btn btn-save" onclick="saveEdit()">Save Layout</button>
+  </div>
 </div>
 
 <!-- Save-As Bar -->
@@ -236,6 +353,23 @@ body{font-family:'Open Sans',sans-serif;font-size:12.25px;line-height:1.5;color:
   <div class="save-bar-right">
     <button class="btn btn-ghost" onclick="closeSaveBar()">Cancel</button>
     <button class="btn btn-primary" onclick="doSaveAs()">Save New Layout</button>
+  </div>
+</div>
+
+<!-- Date Tooltip -->
+<div class="date-tooltip" id="dateTooltip">
+  <div class="date-tooltip-inner">
+    <span class="tooltip-dot"></span>
+    <span class="tooltip-text"></span>
+  </div>
+  <div class="date-tooltip-arrow"></div>
+</div>
+
+<!-- Date Detail Modal -->
+<div class="date-modal-backdrop" id="dateModalBackdrop" onclick="if(event.target===this)closeDateModal()">
+  <div class="date-modal">
+    <div class="dm-accent"></div>
+    <div class="dm-content"></div>
   </div>
 </div>
 
@@ -372,12 +506,12 @@ function mkDefault(){
   return {
     id:'default', name:'Default \u2014 LO Overview', isDefault:true,
     groups:[
-      {id:'g-milestone', name:'Key Milestones', color:'#138890', ids:['applicationDate','intentToProceed','fileReceived','uwReceived','approvedDate','clearToClose','docsOut','docsBack','funded']},
-      {id:'g-trid',      name:'TRID Compliance',color:'#7c3aed', ids:['leDueDate','initialLeDeliveryDate','cdDeliveredDate','cdReceivedDate','earliestClosingDate','scheduledClosingDate']},
-      {id:'g-lock',      name:'Rate Lock',      color:'#d97706', ids:['dateLocked','lockStartDate','lockExpirationDate']},
-      {id:'g-appraisal', name:'Appraisal',      color:'#0d9488', ids:['appraisalOrderCreated','appraisalCompleted','appraisalReceivedByCmg','appraisalApprovedByUw']},
-      {id:'g-expiry',    name:'Expirations',     color:'#cb3a31', ids:['creditDocExpiration','appraisalExpirationDate','assetDocExpirationDate','incomeDocExpirationDate','approvalExpires']},
-      {id:'g-contract',  name:'Contract',        color:'#0891b2', ids:['purchaseContractDate','contractClosingDate','commitmentDate','firstPaymentDate']},
+      {id:'g-milestone', name:'Key Milestones', color:'#138890', span:2, ids:['applicationDate','intentToProceed','fileReceived','uwReceived','approvedDate','clearToClose','docsOut','docsBack','funded']},
+      {id:'g-trid',      name:'TRID Compliance',color:'#7c3aed', span:1, ids:['leDueDate','initialLeDeliveryDate','cdDeliveredDate','cdReceivedDate','earliestClosingDate','scheduledClosingDate']},
+      {id:'g-lock',      name:'Rate Lock',      color:'#d97706', span:1, ids:['dateLocked','lockStartDate','lockExpirationDate']},
+      {id:'g-appraisal', name:'Appraisal',      color:'#0d9488', span:1, ids:['appraisalOrderCreated','appraisalCompleted','appraisalReceivedByCmg','appraisalApprovedByUw']},
+      {id:'g-expiry',    name:'Expirations',     color:'#cb3a31', span:1, ids:['creditDocExpiration','appraisalExpirationDate','assetDocExpirationDate','incomeDocExpirationDate','approvalExpires']},
+      {id:'g-contract',  name:'Contract',        color:'#0891b2', span:2, ids:['purchaseContractDate','contractClosingDate','commitmentDate','firstPaymentDate']},
     ]
   };
 }
@@ -388,6 +522,7 @@ function mkDefault(){
 const SK='clear-dash-layouts', AK='clear-dash-active';
 let layouts=[], activeId='default', editing=false, editGroups=[], collapsedG={}, collapsedI={}, ddOpen=false;
 let dragType=null, dragId=null, dragSourceGroup=null; // drag state
+let viewMode=localStorage.getItem('clear-dash-view')||'cards'; // 'cards' or 'condensed'
 
 function load(){
   try{const r=localStorage.getItem(SK); layouts=r?JSON.parse(r):[mkDefault()]}catch{layouts=[mkDefault()]}
@@ -408,6 +543,70 @@ function dst(s,cat){const d=pd(s);if(!d)return'pending';if(cat==='expiration'&&d
 function stCol(st){return{completed:'#609e5b',today:'#138890',upcoming:'#d97706',expired:'#cb3a31',pending:'#ced4db'}[st]}
 function daysDiff(s){const d=pd(s);if(!d)return null;return Math.ceil((d-TODAY)/(864e5))}
 function gid(){return 'g-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)}
+
+/* ═══════════════════════════════════════════════════════════
+   TOOLTIP
+   ═══════════════════════════════════════════════════════════ */
+
+function relLabel(dd){
+  if(dd===null)return'Not yet set';
+  if(dd===0)return'Today';if(dd===1)return'Tomorrow';if(dd===-1)return'Yesterday';
+  return dd>0?'in '+dd+' day'+(dd!==1?'s':''):Math.abs(dd)+' day'+(Math.abs(dd)!==1?'s':'')+' ago';
+}
+
+function showTooltip(e,dateId){
+  if(editing)return;
+  const f=DF.find(d=>d.id===dateId);if(!f)return;
+  const v=DATES[f.id],st=dst(v,f.c),col=stCol(st),dd=daysDiff(v);
+  const tip=document.getElementById('dateTooltip');
+  tip.querySelector('.tooltip-dot').style.background=col;
+  tip.querySelector('.tooltip-dot').style.color=col;
+  tip.querySelector('.tooltip-text').textContent=relLabel(dd);
+  const rect=e.currentTarget.getBoundingClientRect();
+  tip.style.left=(rect.left+rect.width/2)+'px';
+  if(rect.top<60){tip.style.top=(rect.bottom+8)+'px';tip.classList.add('below')}
+  else{tip.style.top=(rect.top-8)+'px';tip.classList.remove('below')}
+  tip.classList.add('visible');
+}
+
+function hideTooltip(){document.getElementById('dateTooltip').classList.remove('visible','below')}
+
+/* ═══════════════════════════════════════════════════════════
+   DATE DETAIL MODAL
+   ═══════════════════════════════════════════════════════════ */
+
+const MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+function openDateModal(dateId){
+  if(editing)return;
+  const f=DF.find(d=>d.id===dateId);if(!f)return;
+  const v=DATES[f.id],st=dst(v,f.c),col=stCol(st),cat=CATS.find(c=>c.id===f.c);
+  const d=pd(v),dd=daysDiff(v),cc=cat?cat.color:'#64748b';
+
+  const cal=d
+    ?'<div class="dm-calendar"><div class="dm-cal-month" style="background:'+cc+'">'+MONTHS[d.getMonth()]+'</div><div class="dm-cal-day">'+d.getDate()+'</div><div class="dm-cal-year">'+d.getFullYear()+'</div></div>'
+    :'<div class="dm-calendar dm-calendar-empty"><div class="dm-cal-month" style="background:var(--cmg-text-muted)">TBD</div><div class="dm-cal-day">&mdash;</div><div class="dm-cal-year">&nbsp;</div></div>';
+
+  const stBgs={completed:'var(--cmg-green-bg)',today:'var(--cmg-primary-bg)',upcoming:'var(--cmg-amber-bg)',expired:'var(--cmg-red-bg)',pending:'var(--cmg-bg)'};
+  const rel=dd===null
+    ?'<span class="dm-relative" style="background:var(--cmg-bg);color:var(--cmg-text-muted)">Pending</span>'
+    :'<span class="dm-relative" style="background:'+stBgs[st]+';color:'+col+'"><span class="date-status-dot" style="background:'+col+'"></span>'+relLabel(dd)+'</span>';
+
+  let bg='';
+  if(f.f==='c')bg+='<span class="dm-badge" style="background:#ede9fe;color:#6d28d9">\u2699 Computed</span>';
+  if(f.f==='e')bg+='<span class="dm-badge" style="background:var(--cmg-primary-bg);color:var(--cmg-primary-dark)">\u270E Editable</span>';
+  if(f.f==='x'&&v){const dl=daysDiff(v);if(dl!==null){const urg=dl<30;bg+='<span class="dm-badge" style="background:'+(urg?'var(--cmg-red-bg)':'var(--cmg-amber-bg)')+';color:'+(urg?'var(--cmg-red)':'var(--cmg-amber)')+'">\u23F1 '+dl+'d to expiry</span>'}}
+
+  const cp=cat?'<span class="dm-cat-pill"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cat.color+'"></span>'+cat.label+'</span>':'';
+
+  document.querySelector('.dm-accent').style.background='linear-gradient(90deg,'+cc+','+cc+'88)';
+  document.querySelector('.dm-content').innerHTML='<button class="dm-close" onclick="closeDateModal()">&times;</button><div class="dm-header">'+cal+'<div class="dm-info"><div class="dm-label">'+f.l+'</div><div class="dm-formatted-date">'+(v?fmt(v):'Not yet set')+'</div>'+rel+'</div></div><div class="dm-divider"></div><div class="dm-body"><div class="dm-description">'+f.d+'</div><div class="dm-meta">'+cp+bg+'</div></div>';
+
+  hideTooltip();
+  document.getElementById('dateModalBackdrop').classList.add('open');
+}
+
+function closeDateModal(){document.getElementById('dateModalBackdrop').classList.remove('open')}
 
 /* ═══════════════════════════════════════════════════════════
    RENDERING
@@ -433,10 +632,12 @@ function renderControls(){
   }
   document.getElementById('layoutSelect').innerHTML=`<button class="layout-btn${ddOpen?' open':''}" onclick="toggleDD()">${al.name} ${ch}</button>${dd}`;
 
-  // Right controls
-  document.getElementById('controlsRight').innerHTML = editing
-    ? ''
-    : `<button class="btn btn-primary" onclick="startEdit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Customize</button>`;
+  // View toggle + right controls
+  const cardIcon=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`;
+  const listIcon=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`;
+  const toggle=`<div class="view-toggle"><button class="${viewMode==='cards'?'active':''}" onclick="setView('cards')">${cardIcon} Cards</button><button class="${viewMode==='condensed'?'active':''}" onclick="setView('condensed')">${listIcon} Condensed</button></div>`;
+  const customize=editing?'':`<button class="btn btn-primary" onclick="startEdit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Customize</button>`;
+  document.getElementById('controlsRight').innerHTML=`${toggle}${customize}`;
 }
 
 function renderStats(){
@@ -460,28 +661,33 @@ function renderDateCard(f, groupId, borderColor){
     }
   }
   const rm=editing?`<button class="date-card-remove" onclick="event.stopPropagation();removeDate('${groupId}','${f.id}')" title="Remove">&times;</button>`:'';
-  return `<div class="date-card" style="border-left-color:${borderColor}" title="${f.d}" draggable="${editing}" ondragstart="onDateDragStart(event,'${f.id}','${groupId}')" ondragend="onDragEnd(event)"><div class="date-card-top"><div class="date-card-label">${f.l}</div>${rm}</div><div class="date-card-value ${st}"><span class="date-status-dot" style="background:${col}"></span>${fmt(v)}</div>${badges?`<div class="date-card-badges">${badges}</div>`:''}</div>`;
+  return `<div class="date-card" style="border-left-color:${borderColor}" onclick="openDateModal('${f.id}')" onmouseenter="showTooltip(event,'${f.id}')" onmouseleave="hideTooltip()" draggable="${editing}" ondragstart="onDateDragStart(event,'${f.id}','${groupId}')" ondragend="onDragEnd(event)"><div class="date-card-top"><div class="date-card-label">${f.l}</div>${rm}</div><div class="date-card-value ${st}"><span class="date-status-dot" style="background:${col}"></span>${fmt(v)}</div>${badges?`<div class="date-card-badges">${badges}</div>`:''}</div>`;
 }
 
 function renderGroups(){
   const groups=editing?editGroups:active().groups;
   const el=document.getElementById('mainArea');
   if(!groups.length){
-    el.innerHTML=`<div class="empty-state"><h3>No groups yet</h3><p>${editing?'Click "+ Add Group" below to get started.':'Click "Customize" to build your layout.'}</p></div>${editing?'<button class="add-group-btn" onclick="addGroup()">+ Add Group</button>':''}`;
+    el.innerHTML=`${editing?'<button class="add-group-btn" onclick="addGroup()">+ Add Group</button>':''}<div class="empty-state"><h3>No groups yet</h3><p>${editing?'Click "+ Add Group" to get started.':'Click "Customize" to build your layout.'}</p></div>${editing?'<button class="add-group-btn" onclick="addGroup()">+ Add Group</button>':''}`;
     return;
   }
   let html='';
+  html+=`<button class="add-group-btn" onclick="addGroup(0)">+ Add Group</button>`;
+  html+=`<div class="groups-grid">`;
   groups.forEach((g,i)=>{
     const fields=g.ids.map(id=>DF.find(f=>f.id===id)).filter(Boolean);
     const col=collapsedG[g.id];
+    const span=g.span||1;
+    const spanCls=span===2?' span-2':'';
     const grip=`<div class="group-drag-handle" title="Drag to reorder">&#x2630;</div>`;
     const nameEl=editing?`<input class="group-name" value="${g.name}" onchange="renameGroup('${g.id}',this.value)" onclick="event.stopPropagation()">`:`<span class="group-name">${g.name}</span>`;
-    const actions=`<div class="group-actions"><div class="color-dots">${GROUP_COLORS.map(gc=>`<span class="color-dot${gc===g.color?' active':''}" style="background:${gc}" onclick="event.stopPropagation();setGroupColor('${g.id}','${gc}')"></span>`).join('')}</div><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteGroup('${g.id}')">Delete</button></div>`;
+    const widthIcon=span===2
+      ?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="1"/><line x1="12" y1="5" x2="12" y2="19"/></svg>`
+      :`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="1"/></svg>`;
+    const widthBtn=`<button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();toggleSpan('${g.id}')" title="${span===2?'Half width':'Full width'}">${widthIcon} ${span===2?'Half':'Full'}</button>`;
+    const actions=`<div class="group-actions">${widthBtn}<div class="color-dots">${GROUP_COLORS.map(gc=>`<span class="color-dot${gc===g.color?' active':''}" style="background:${gc}" onclick="event.stopPropagation();setGroupColor('${g.id}','${gc}')"></span>`).join('')}</div><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteGroup('${g.id}')">Delete</button></div>`;
 
-    // Drop zone before group (for reorder)
-    html+=`<div class="drop-zone" data-position="${i}" ondragover="onGroupZoneDragOver(event)" ondragleave="onGroupZoneDragLeave(event)" ondrop="onGroupZoneDrop(event,${i})"></div>`;
-
-    html+=`<div class="group-panel" id="gp-${g.id}" draggable="${editing}" ondragstart="onGroupDragStart(event,'${g.id}')" ondragend="onDragEnd(event)">`;
+    html+=`<div class="group-panel${spanCls}" id="gp-${g.id}" draggable="${editing}" ondragstart="onGroupDragStart(event,'${g.id}')" ondragend="onDragEnd(event)" ondragover="onGroupPanelDragOver(event,'${g.id}')" ondragleave="onGroupPanelDragLeave(event)" ondrop="onGroupPanelDrop(event,'${g.id}')">`;
     html+=`<div class="group-header" onclick="toggleGroup('${g.id}')">${grip}<span class="group-color-bar" style="background:${g.color}"></span>${nameEl}<span class="group-count">${fields.length}</span>${actions}<svg class="group-chevron${col?' collapsed':''}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>`;
 
     if(!col){
@@ -495,10 +701,11 @@ function renderGroups(){
     }
     html+=`</div>`;
   });
-  // Final drop zone
-  html+=`<div class="drop-zone" data-position="${groups.length}" ondragover="onGroupZoneDragOver(event)" ondragleave="onGroupZoneDragLeave(event)" ondrop="onGroupZoneDrop(event,${groups.length})"></div>`;
+  html+=`</div>`; // close groups-grid
   html+=`<button class="add-group-btn" onclick="addGroup()">+ Add Group</button>`;
+  if(editing) html+=`<div style="height:60px"></div>`;
   if(editing) el.classList.add('editing'); else el.classList.remove('editing');
+  if(viewMode==='condensed') el.classList.add('condensed'); else el.classList.remove('condensed');
   el.innerHTML=html;
 }
 
@@ -588,21 +795,24 @@ function onGroupContentDrop(e,groupId){
   renderGroups();renderInventory();renderStats();
 }
 
-// Group reorder drop zones
-function onGroupZoneDragOver(e){
-  if(dragType!=='group')return;
+// Group reorder — drag a group over another group to swap positions
+function onGroupPanelDragOver(e,targetId){
+  if(dragType!=='group'||dragId===targetId)return;
   e.preventDefault();e.dataTransfer.dropEffect='move';
-  e.currentTarget.classList.add('active');
+  const el=document.getElementById('gp-'+targetId);if(el)el.classList.add('drag-over-group');
 }
-function onGroupZoneDragLeave(e){e.currentTarget.classList.remove('active')}
-function onGroupZoneDrop(e,position){
-  e.preventDefault();e.currentTarget.classList.remove('active');
-  if(dragType!=='group'||!dragId)return;
-  const idx=editGroups.findIndex(g=>g.id===dragId);
-  if(idx<0)return;
-  const [moved]=editGroups.splice(idx,1);
-  const insertAt=position>idx?position-1:position;
-  editGroups.splice(insertAt,0,moved);
+function onGroupPanelDragLeave(e){
+  e.currentTarget.classList.remove('drag-over-group');
+}
+function onGroupPanelDrop(e,targetId){
+  e.preventDefault();e.currentTarget.classList.remove('drag-over-group');
+  if(dragType==='date'){onGroupContentDrop(e,targetId);return} // date drop on header
+  if(dragType!=='group'||!dragId||dragId===targetId)return;
+  const fromIdx=editGroups.findIndex(g=>g.id===dragId);
+  const toIdx=editGroups.findIndex(g=>g.id===targetId);
+  if(fromIdx<0||toIdx<0)return;
+  const [moved]=editGroups.splice(fromIdx,1);
+  editGroups.splice(toIdx,0,moved);
   renderGroups();
 }
 
@@ -614,6 +824,7 @@ function startEdit(){
   editing=true;
   editGroups=JSON.parse(JSON.stringify(active().groups));
   document.getElementById('modeBanner').classList.add('visible');
+  document.getElementById('editFooter').classList.add('visible');
   document.getElementById('mainArea').classList.add('with-inventory','editing');
   document.getElementById('inventory').classList.add('open');
   renderAll();
@@ -622,6 +833,8 @@ function startEdit(){
 function cancelEdit(){
   editing=false;
   document.getElementById('modeBanner').classList.remove('visible');
+  document.getElementById('editFooter').classList.remove('visible');
+  document.getElementById('saveBar').classList.remove('visible');
   document.getElementById('mainArea').classList.remove('with-inventory','editing');
   document.getElementById('inventory').classList.remove('open');
   renderAll();
@@ -635,15 +848,35 @@ function saveEdit(){
 
 function closeInventory(){cancelEdit()}
 
+function openSaveAs(){
+  document.getElementById('saveBar').classList.add('visible');
+  document.getElementById('editFooter').classList.remove('visible');
+  const input=document.getElementById('saveNameInput');
+  input.value='';input.focus();
+}
+function closeSaveBar(){
+  document.getElementById('saveBar').classList.remove('visible');
+  document.getElementById('editFooter').classList.add('visible');
+}
+function doSaveAs(){
+  const name=(document.getElementById('saveNameInput').value||'').trim();
+  if(!name){document.getElementById('saveNameInput').focus();return}
+  const id='lay-'+Date.now();
+  layouts.push({id,name,isDefault:false,groups:JSON.parse(JSON.stringify(editGroups))});
+  activeId=id;persist();
+  cancelEdit();
+}
+
 /* ═══════════════════════════════════════════════════════════
    GROUP MANAGEMENT
    ═══════════════════════════════════════════════════════════ */
 
-function addGroup(){
+function addGroup(pos){
   const name=prompt('Group name:','My Dates');
   if(!name)return;
   const color=GROUP_COLORS[editGroups.length%GROUP_COLORS.length];
-  editGroups.push({id:gid(),name,color,ids:[]});
+  const g={id:gid(),name,color,span:1,ids:[]};
+  if(pos===0) editGroups.unshift(g); else editGroups.push(g);
   renderGroups();renderInventory();
 }
 
@@ -651,6 +884,11 @@ function renameGroup(id,name){const g=editGroups.find(x=>x.id===id);if(g)g.name=
 
 function setGroupColor(id,color){
   const g=editGroups.find(x=>x.id===id);if(g){g.color=color;renderGroups()}
+}
+
+function toggleSpan(id){
+  const g=editGroups.find(x=>x.id===id);
+  if(g){g.span=(g.span||1)===2?1:2;renderGroups()}
 }
 
 function deleteGroup(id){
@@ -671,6 +909,7 @@ function toggleInvCat(id){collapsedI[id]=!collapsedI[id];renderInventory()}
    LAYOUT MANAGEMENT
    ═══════════════════════════════════════════════════════════ */
 
+function setView(mode){viewMode=mode;localStorage.setItem('clear-dash-view',mode);renderControls();renderGroups()}
 function toggleDD(){ddOpen=!ddOpen;renderControls()}
 function switchLayout(id){activeId=id;ddOpen=false;persist();renderAll()}
 function deleteLayout(id){if(!confirm('Delete this layout?'))return;layouts=layouts.filter(l=>l.id!==id);if(activeId===id)activeId='default';ddOpen=false;persist();renderAll()}
@@ -683,7 +922,7 @@ function createLayout(){
 
 // Close dropdown on outside click
 document.addEventListener('click',e=>{if(ddOpen&&!e.target.closest('.layout-select')){ddOpen=false;renderControls()}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(editing)cancelEdit();ddOpen=false;renderControls()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('dateModalBackdrop').classList.contains('open')){closeDateModal();return}if(editing)cancelEdit();ddOpen=false;renderControls()}});
 
 /* ═══════════════════════════════════════════════════════════
    INIT
