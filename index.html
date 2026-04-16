@@ -544,9 +544,10 @@ const DATES = {prospect:'2026-03-05',lePending:'2026-03-10',fileReceived:'2026-0
 /* ═══════════════════════════════════════════════════════════
    DEFAULT LAYOUT
    ═══════════════════════════════════════════════════════════ */
+const DEFAULT_VER=2; // bump to force-refresh cached default layouts
 function mkDefault(){
   return {
-    id:'default', name:'Default \u2014 LO Overview', isDefault:true,
+    id:'default', name:'Default \u2014 LO Overview', isDefault:true, ver:DEFAULT_VER,
     groups:[
       {id:'g-docdue',    name:'Doc Due Dates',    color:'#db2777', span:2, ids:['customDocDueDate1','customDocDueDate2']},
       {id:'g-builder',   name:'Builder Business', color:'#86ba41', span:2, ids:['upgradeDecisionDue','additionalDepositDue','rateLockDueDate','floatDownWindowOpens','floatDownWindowCloses']},
@@ -577,9 +578,13 @@ let viewMode=localStorage.getItem('clear-dash-view')||'cards'; // 'cards' or 'co
 
 function load(){
   try{const r=localStorage.getItem(SK); layouts=r?JSON.parse(r):[mkDefault()]}catch{layouts=[mkDefault()]}
-  if(!layouts.find(l=>l.id==='default')) layouts.unshift(mkDefault());
+  // Auto-refresh stale default layout when version bumps
+  const di=layouts.findIndex(l=>l.id==='default');
+  if(di>=0&&(layouts[di].ver||0)<DEFAULT_VER) layouts[di]=mkDefault();
+  if(di<0) layouts.unshift(mkDefault());
   activeId=localStorage.getItem(AK)||'default';
   loadCustomDocs();
+  persist();
 }
 function persist(){localStorage.setItem(SK,JSON.stringify(layouts)); localStorage.setItem(AK,activeId)}
 function active(){return layouts.find(l=>l.id===activeId)||mkDefault()}
